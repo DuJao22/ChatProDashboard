@@ -1,0 +1,762 @@
+{% extends "base.html" %}
+{% block title %}Login - Ariguá Distribuidora{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="logo">
+                <img src="/static/images/logo-arigua.png" alt="Ariguá" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="logo-fallback" style="display:none;">
+                    <i class="fas fa-water"></i>
+                </div>
+            </div>
+            <h1 id="pageTitle">Entrar</h1>
+            <p id="pageSubtitle">Acesse sua conta para continuar</p>
+        </div>
+
+        <div class="login-tabs">
+            <button class="tab-btn active" data-tab="cliente">
+                <i class="fas fa-user"></i> Cliente
+            </button>
+            <button class="tab-btn" data-tab="cadastro">
+                <i class="fas fa-user-plus"></i> Cadastrar
+            </button>
+            <button class="tab-btn" data-tab="admin">
+                <i class="fas fa-shield-alt"></i> Admin
+            </button>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <form class="login-form" id="clienteForm">
+            <div class="form-group">
+                <label for="phone">Telefone</label>
+                <div class="input-icon">
+                    <i class="fas fa-phone"></i>
+                    <input type="tel" id="phone" name="phone" placeholder="(00) 00000-0000" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-sign-in-alt"></i>
+                Entrar
+            </button>
+        </form>
+
+        <form class="login-form" id="cadastroForm" style="display: none;">
+            <div class="form-group">
+                <label for="cadastroPhone">Telefone</label>
+                <div class="input-icon">
+                    <i class="fas fa-phone"></i>
+                    <input type="tel" id="cadastroPhone" name="phone" placeholder="(00) 00000-0000" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="cadastroName">Nome Completo</label>
+                <div class="input-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="cadastroName" name="name" placeholder="Seu nome completo" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="cadastroCep">CEP</label>
+                <div class="input-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <input type="text" id="cadastroCep" name="cep" placeholder="00000-000" required>
+                </div>
+                <div class="cep-info" id="cepInfo" style="display: none;">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="cepAddress"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group form-group-small">
+                    <label for="cadastroNumber">Número</label>
+                    <div class="input-icon">
+                        <i class="fas fa-home"></i>
+                        <input type="text" id="cadastroNumber" name="number" placeholder="Nº" required>
+                    </div>
+                </div>
+
+                <div class="form-group form-group-large">
+                    <label for="cadastroComplement">Complemento</label>
+                    <div class="input-icon">
+                        <i class="fas fa-building"></i>
+                        <input type="text" id="cadastroComplement" name="complement" placeholder="Apt, Bloco, etc (opcional)">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-user-plus"></i>
+                Cadastrar
+            </button>
+        </form>
+
+        <form class="login-form" id="adminForm" style="display: none;">
+            <div class="form-group">
+                <label for="username">Usuário</label>
+                <div class="input-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" name="username" placeholder="Digite seu usuário" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <div class="input-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" name="password" placeholder="Digite sua senha" required>
+                    <button type="button" class="toggle-password" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="toggleIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-sign-in-alt"></i>
+                Entrar
+            </button>
+        </form>
+
+        <div class="login-divider" id="dividerCliente">
+            <span>ou</span>
+        </div>
+
+        <div class="login-alternatives" id="alternativesCliente">
+            <a href="{{ url_for('chat') }}" class="btn btn-secondary btn-block">
+                <i class="fas fa-comments"></i>
+                Entrar pelo Chat
+            </a>
+        </div>
+
+        <div class="login-footer" id="footerCliente">
+            <p>Não tem conta? <a href="#" onclick="switchToTab('cadastro'); return false;">Cadastre-se aqui</a></p>
+        </div>
+
+        <div class="login-footer" id="footerCadastro" style="display: none;">
+            <p>Já tem conta? <a href="#" onclick="switchToTab('cliente'); return false;">Faça login</a></p>
+        </div>
+
+        <div class="login-footer" id="footerAdmin" style="display: none;">
+            <a href="{{ url_for('index') }}" class="back-link">
+                <i class="fas fa-arrow-left"></i> Voltar ao site
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    padding: 20px;
+}
+
+.login-card {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.login-header .logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-header .logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.login-header .logo-fallback {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: white;
+}
+
+.login-header h1 {
+    font-size: 28px;
+    color: #1a1a2e;
+    margin-bottom: 10px;
+}
+
+.login-header p {
+    color: #666;
+}
+
+.login-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 25px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 12px;
+    border: 2px solid #eee;
+    background: white;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.tab-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+    color: white;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-group-small {
+    flex: 0 0 100px;
+}
+
+.form-group-large {
+    flex: 1;
+}
+
+.input-icon {
+    position: relative;
+}
+
+.input-icon i:first-child {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+.input-icon input {
+    width: 100%;
+    padding: 15px 15px 15px 45px;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.input-icon input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.cep-info {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: #e8f5e9;
+    border-radius: 8px;
+    color: #2e7d32;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cep-info i {
+    color: #4caf50;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.btn-block {
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.btn-secondary {
+    background: #f5f5f5;
+    color: #333;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #eee;
+}
+
+.login-divider {
+    text-align: center;
+    margin: 25px 0;
+    position: relative;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: #eee;
+}
+
+.login-divider::before { left: 0; }
+.login-divider::after { right: 0; }
+
+.login-divider span {
+    background: white;
+    padding: 0 15px;
+    color: #999;
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 25px;
+    color: #666;
+}
+
+.login-footer a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.back-link {
+    color: #666;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.back-link:hover {
+    color: #667eea;
+}
+
+.error-message {
+    background: #ffebee;
+    color: #c62828;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: none;
+    text-align: center;
+}
+
+.success-message {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: none;
+    text-align: center;
+}
+
+.btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 25px;
+    }
+    
+    .tab-btn {
+        padding: 8px 6px;
+        font-size: 11px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .form-group-small,
+    .form-group-large {
+        flex: 1;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const clienteForm = document.getElementById('clienteForm');
+    const cadastroForm = document.getElementById('cadastroForm');
+    const adminForm = document.getElementById('adminForm');
+    const dividerCliente = document.getElementById('dividerCliente');
+    const alternativesCliente = document.getElementById('alternativesCliente');
+    const footerCliente = document.getElementById('footerCliente');
+    const footerCadastro = document.getElementById('footerCadastro');
+    const footerAdmin = document.getElementById('footerAdmin');
+    const errorMessage = document.getElementById('errorMessage');
+    const successMessage = document.getElementById('successMessage');
+    const phoneInput = document.getElementById('phone');
+    const cadastroPhoneInput = document.getElementById('cadastroPhone');
+    const cadastroCepInput = document.getElementById('cadastroCep');
+    const pageTitle = document.getElementById('pageTitle');
+    const pageSubtitle = document.getElementById('pageSubtitle');
+    
+    window.switchToTab = function(tabName) {
+        const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
+        if (targetBtn) {
+            targetBtn.click();
+        }
+    };
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            
+            clienteForm.style.display = 'none';
+            cadastroForm.style.display = 'none';
+            adminForm.style.display = 'none';
+            dividerCliente.style.display = 'none';
+            alternativesCliente.style.display = 'none';
+            footerCliente.style.display = 'none';
+            footerCadastro.style.display = 'none';
+            footerAdmin.style.display = 'none';
+            
+            if (this.dataset.tab === 'cliente') {
+                clienteForm.style.display = 'block';
+                dividerCliente.style.display = 'block';
+                alternativesCliente.style.display = 'block';
+                footerCliente.style.display = 'block';
+                pageTitle.textContent = 'Entrar';
+                pageSubtitle.textContent = 'Acesse sua conta para continuar';
+            } else if (this.dataset.tab === 'cadastro') {
+                cadastroForm.style.display = 'block';
+                footerCadastro.style.display = 'block';
+                pageTitle.textContent = 'Cadastrar';
+                pageSubtitle.textContent = 'Crie sua conta em segundos';
+            } else {
+                adminForm.style.display = 'block';
+                footerAdmin.style.display = 'block';
+                pageTitle.textContent = 'Admin';
+                pageSubtitle.textContent = 'Acesso administrativo';
+            }
+        });
+    });
+    
+    function formatPhone(input) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            
+            if (value.length > 6) {
+                value = `(${value.slice(0,2)}) ${value.slice(2,7)}-${value.slice(7)}`;
+            } else if (value.length > 2) {
+                value = `(${value.slice(0,2)}) ${value.slice(2)}`;
+            } else if (value.length > 0) {
+                value = `(${value}`;
+            }
+            e.target.value = value;
+        });
+    }
+    
+    formatPhone(phoneInput);
+    formatPhone(cadastroPhoneInput);
+    
+    cadastroCepInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 8) value = value.slice(0, 8);
+        
+        if (value.length > 5) {
+            value = `${value.slice(0,5)}-${value.slice(5)}`;
+        }
+        e.target.value = value;
+        
+        if (value.replace('-', '').length === 8) {
+            fetchCep(value.replace('-', ''));
+        } else {
+            document.getElementById('cepInfo').style.display = 'none';
+        }
+    });
+    
+    function fetchCep(cep) {
+        fetch(`/api/cep/${cep}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const cepInfo = document.getElementById('cepInfo');
+                    const cepAddress = document.getElementById('cepAddress');
+                    cepAddress.textContent = `${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`;
+                    cepInfo.style.display = 'flex';
+                    
+                    cadastroForm.dataset.logradouro = data.logradouro;
+                    cadastroForm.dataset.bairro = data.bairro;
+                    cadastroForm.dataset.cidade = data.localidade;
+                    cadastroForm.dataset.estado = data.uf;
+                } else {
+                    document.getElementById('cepInfo').style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error('Erro ao buscar CEP:', err);
+                document.getElementById('cepInfo').style.display = 'none';
+            });
+    }
+    
+    clienteForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const phone = phoneInput.value;
+        const submitBtn = clienteForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        errorMessage.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+        
+        fetch('/api/customer/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ phone: phone })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const savedRedirect = sessionStorage.getItem('redirectAfterLogin');
+                if (savedRedirect) {
+                    sessionStorage.removeItem('redirectAfterLogin');
+                    window.location.href = savedRedirect;
+                } else {
+                    window.location.href = data.redirect;
+                }
+            } else {
+                errorMessage.textContent = data.error;
+                errorMessage.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            errorMessage.textContent = 'Erro ao fazer login. Tente novamente.';
+            errorMessage.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+    });
+    
+    cadastroForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const phone = cadastroPhoneInput.value;
+        const name = document.getElementById('cadastroName').value;
+        const cep = cadastroCepInput.value.replace('-', '');
+        const number = document.getElementById('cadastroNumber').value;
+        const complement = document.getElementById('cadastroComplement').value;
+        
+        const submitBtn = cadastroForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        errorMessage.style.display = 'none';
+        successMessage.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+        
+        const nameParts = name.trim().split(' ');
+        if (nameParts.length < 2) {
+            errorMessage.textContent = 'Digite seu nome completo (nome e sobrenome).';
+            errorMessage.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            return;
+        }
+        
+        if (!cadastroForm.dataset.logradouro || !cadastroForm.dataset.cidade) {
+            errorMessage.textContent = 'CEP inválido ou não encontrado. Verifique e tente novamente.';
+            errorMessage.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            return;
+        }
+        
+        fetch('/api/customer/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                phone: phone,
+                name: name,
+                cep: cep,
+                number: number,
+                complement: complement,
+                address: cadastroForm.dataset.logradouro || '',
+                neighborhood: cadastroForm.dataset.bairro || '',
+                city: cadastroForm.dataset.cidade || '',
+                state: cadastroForm.dataset.estado || ''
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                successMessage.textContent = 'Cadastro realizado com sucesso! Redirecionando...';
+                successMessage.style.display = 'block';
+                
+                setTimeout(() => {
+                    window.location.href = data.redirect;
+                }, 1500);
+            } else {
+                errorMessage.textContent = data.error;
+                errorMessage.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            errorMessage.textContent = 'Erro ao cadastrar. Tente novamente.';
+            errorMessage.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+    });
+    
+    adminForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const submitBtn = adminForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        errorMessage.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+        
+        fetch('/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, password: password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect;
+            } else {
+                errorMessage.textContent = data.error;
+                errorMessage.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            errorMessage.textContent = 'Erro ao fazer login. Tente novamente.';
+            errorMessage.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+    });
+});
+
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+</script>
+{% endblock %}
