@@ -1,0 +1,96 @@
+[2025-12-07 20:34:52 +0000] [122] [INFO] Starting gunicorn 23.0.0
+[2025-12-07 20:34:52 +0000] [122] [INFO] Listening at: http://0.0.0.0:5000 (122)
+[2025-12-07 20:34:52 +0000] [122] [INFO] Using worker: eventlet
+[2025-12-07 20:34:52 +0000] [132] [INFO] Booting worker with pid: 132
+ℹ️ Chat operando sem IA (fluxo simplificado)
+ [2025-12-07 20:34:54 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:55 +0000] [122] [INFO] Handling signal: winch
+⚠️ Aviso ao executar statement: FOREIGN KEY constraint failed
+⚠️ Aviso ao executar statement: FOREIGN KEY constraint failed
+⚠️ Aviso ao executar statement: UNIQUE constraint failed: categories.id
+⚠️ Aviso ao executar statement: UNIQUE constraint failed: products.id
+✅ Tabela chat_pending_orders verificada/criada com sucesso!
+[2025-12-07 20:34:55 +0000] [122] [INFO] Handling signal: winch
+✅ Tabela store_settings verificada/criada com sucesso!
+✅ Banco de dados SQLite Cloud inicializado com sucesso!
+🚀 Sistema de ping iniciado (a cada 5 minutos)
+[2025-12-07 20:34:55 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:56 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:56 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:56 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:56 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:56 +0000] [122] [INFO] Handling signal: winch
+🔍 Check login - customer_id: None, permanent: False
+[2025-12-07 20:34:57 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:57 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:57 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:57 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:57 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:57 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:57 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:58 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:34:58 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:02 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:03 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:04 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:04 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:05 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:07 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:07 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:07 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:07 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:08 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:08 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:10 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:10 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:11 +0000] [122] [INFO] Handling signal: winch
+[2025-12-07 20:35:11 +0000] [122] [INFO] Handling signal: winch
+ERROR:app:Exception on /admin [GET]
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/app.py", line 308, in decorated_function
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/app.py", line 750, in admin_dashboard
+    return render_template('admin/dashboard.html')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/runner/workspace/templates/admin/dashboard.html", line 1, in top-level template code
+    {% extends "admin/base.html" %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/templates/admin/base.html", line 65, in top-level template code
+    <a href="{{ url_for('admin_logout') }}" class="nav-item logout">
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1121, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1110, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'admin_logout'. Did you mean 'admin_login' instead?
+^A^A
