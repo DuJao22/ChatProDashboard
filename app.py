@@ -38,9 +38,7 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
-SQLITECLOUD_URL = os.environ.get('SQLITECLOUD_URL')
-if not SQLITECLOUD_URL:
-    raise ValueError("❌ SQLITECLOUD_URL environment variable is required!")
+SQLITECLOUD_URL = "sqlitecloud://cmq6frwshz.g4.sqlite.cloud:8860/database.db?apikey=Dor8OwUECYmrbcS5vWfsdGpjCpdm9ecSDJtywgvRw8k"
 
 def get_db():
     if 'db' not in g:
@@ -1782,15 +1780,10 @@ def clear_notifications():
         print(f"Erro ao limpar notificações: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-try:
-    from gemini_integration import GeminiChat
-    gemini_chat = GeminiChat()
-    GEMINI_AVAILABLE = True
-    print("✅ Gemini AI configurado e pronto!")
-except Exception as e:
-    print(f"⚠️ Gemini AI não configurado (modo fallback ativo): {e}")
-    GEMINI_AVAILABLE = False
-    gemini_chat = None
+# IA removida - Chat opera sem Gemini
+GEMINI_AVAILABLE = False
+gemini_chat = None
+print("ℹ️ Chat operando sem IA (fluxo simplificado)")
 
 active_conversations = {}
 
