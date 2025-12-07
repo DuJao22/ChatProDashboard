@@ -1930,29 +1930,22 @@ def handle_connect(auth=None):
                 'data': {}
             }
 
-        # Carregar mensagens existentes
-        messages = query_db('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at', [conv_id])
-
-        if messages and len(messages) > 0:
-            # Apenas carregar mensagens, não enviar nova
-            emit('load_messages', [serialize_message(m) for m in messages])
+        # Sempre enviar saudação inicial ao conectar
+        if customer:
+            first_name = customer['name'].split()[0] if customer['name'] else 'amigo'
+            welcome_msg = f"Olá, {first_name}! 😊\n\nBem-vindo de volta à Ariguá Distribuidora!\n\nEm que posso te ajudar hoje?"
         else:
-            # Só enviar mensagem de boas-vindas se não houver mensagens
-            if customer:
-                first_name = customer['name'].split()[0] if customer['name'] else 'amigo'
-                welcome_msg = f"Olá, {first_name}! 😊\n\nBem-vindo à Ariguá Distribuidora!\n\nEm que posso te ajudar hoje?"
-            else:
-                welcome_msg = "Olá! 😊\n\nBem-vindo à Ariguá Distribuidora!\n\nPara começar, me informe seu telefone com DDD.\n\nExemplo: 31 99999-9999"
+            welcome_msg = "Olá! 😊\n\nBem-vindo à Ariguá Distribuidora!\n\nPara começar, me informe seu telefone com DDD.\n\nExemplo: 31 99999-9999"
 
-            msg_id = insert_db('INSERT INTO messages (conversation_id, sender, content, created_at) VALUES (?, ?, ?, ?)',
-                              [conv_id, 'bot', welcome_msg, brasilia_now()])
+        msg_id = insert_db('INSERT INTO messages (conversation_id, sender, content, created_at) VALUES (?, ?, ?, ?)',
+                          [conv_id, 'bot', welcome_msg, brasilia_now()])
 
-            emit('message', {
-                'id': msg_id,
-                'sender': 'bot',
-                'content': welcome_msg,
-                'timestamp': brasilia_now().isoformat()
-            })
+        emit('message', {
+            'id': msg_id,
+            'sender': 'bot',
+            'content': welcome_msg,
+            'timestamp': brasilia_now().isoformat()
+        })
     except Exception as e:
         print(f"❌ Erro ao conectar: {e}")
         import traceback
