@@ -938,545 +938,6 @@ def check_delivery_radius():
         return jsonify({'success': True, 'delivers': True, 'message': 'Erro ao verificar entrega, mas pedido será aceito'})
 
 
-@app.route('/api/cep/<cep>')
-def buscar_cep(cep):
-    cep = cep.replace('-', '').replace('.', '')
-    if len(cep) != 8:
-        return jsonify({'error': 'CEP inválido'}), 400
-
-    try:
-        response = requests.get(f'https://viacep.com.br/ws/{cep}/json/', timeout=5)
-        data = response.json()
-        if 'erro' in data:
-            return jsonify({'error': 'CEP não encontrado'}), 404
-        return jsonify({
-            'cep': data.get('cep'),
-            'logradouro': data.get('logradouro'),
-            'bairro': data.get('bairro'),
-            'cidade': data.get('localidade'),
-            'estado': data.get('uf')
-        })
-    except Exception as e:
-        return jsonify({'error': 'Erro ao buscar CEP'}), 500
-
-@app.route('/api/buscar-endereco')
-def buscar_endereco():
-    estado = request.args.get('estado', '')
-    cidade = request.args.get('cidade', '')
-    rua = request.args.get('rua', '')
-
-    if len(rua) < 3:
-        return jsonify({'error': 'Digite pelo menos 3 caracteres'}), 400
-
-    try:
-        response = requests.get(f'https://viacep.com.br/ws/{estado}/{cidade}/{rua}/json/', timeout=5)
-        data = response.json()
-        return jsonify(data if isinstance(data, list) else [])
-    except Exception as e:
-        return jsonify({'error': 'Erro ao buscar endereço'}), 500
-
-@app.route('/api/products')
-def get_products():
-    category = request.args.get('category')
-    search = request.args.get('search', '')
-
-    if category:
-        products = query_db('''
-            SELECT p.*, c.name as category_name 
-            FROM products p 
-            LEFT JOIN categories c ON p.category_id = c.id 
-            WHERE p.active = 1 AND p.category_id = ?
-            ORDER BY p.name
-        ''', [category])
-    elif search:
-        products = query_db('''
-            SELECT p.*, c.name as category_name 
-            FROM products p 
-            LEFT JOIN categories c ON p.category_id = c.id 
-            WHERE p.active = 1 AND (p.name LIKE ? OR p.description LIKE ?)
-            ORDER BY p.name
-        ''', [f'%{search}%', f'%{search}%'])
-    else:
-        products = query_db('''
-            SELECT p.*, c.name as category_name 
-            FROM products p 
-            LEFT JOIN categories c ON p.category_id = c.id 
-            WHERE p.active = 1
-            ORDER BY p.name
-        ''')
-
-    return jsonify([dict(p) for p in products])
-
-@app.route('/api/categories')
-def get_categories():
-    categories = query_db('SELECT * FROM categories WHERE active = 1 ORDER BY name')
-    return jsonify([dict(c) for c in categories])
-
-@app.route('/api/chat/products')
-def get_chat_products():
-    """API para buscar produtos para exibição no chat com filtro de categoria"""
-    category = request.args.get('category', '')
-
-    if category:
-        products = query_db('''
-            SELECT p.*, c.name as category_name 
-            FROM products p 
-            LEFT JOIN categories c ON p.category_id = c.id 
-            WHERE p.active = 1 AND p.category_id = ?
-            ORDER BY p.name
-        ''', [category])
-    else:
-        products = query_db('''
-            SELECT p.*, c.name as category_name 
-            FROM products p 
-            LEFT JOIN categories c ON p.category_id = c.id 
-            WHERE p.active = 1
-            ORDER BY p.name
-        ''')
-
-    categories = query_db('SELECT * FROM categories WHERE active = 1 ORDER BY name')
-
-    return jsonify({
-        'products': [dict(p) for p in products],
-        'categories': [dict(c) for c in categories]
-    })
-
-@app.route('/api/cart', methods=['GET', 'POST', 'PUT', 'DELETE'])
-def manage_cart():
-    session_id = session.get('session_id') or session.get('customer_id')
-    customer_id = session.get('customer_id')
-
-    if request.method == 'GET':
-        if customer_id:
-            items = query_db('''
-                SELECT ci.*, p.name, p.price, p.image_url 
-                FROM cart_items ci 
-                JOIN products p ON ci.product_id = p.id 
-                WHERE ci.customer_id = ?
-            ''', [customer_id])
-        else:
-            items = query_db('''
-                SELECT ci.*, p.name, p.price, p.image_url 
-                FROM cart_items ci 
-                JOIN products p ON ci.product_id = p.id 
-                WHERE ci.session_id = ?
-            ''', [session_id])
-        return jsonify([dict(i) for i in items])
-
-    elif request.method == 'POST':
-        data = request.get_json()
-        product_id = data.get('product_id')
-        quantity = data.get('quantity', 1)
-
-        if customer_id:
-            existing = query_db('SELECT * FROM cart_items WHERE customer_id = ? AND product_id = ?', 
-                              [customer_id, product_id], one=True)
-            if existing:
-                update_db('UPDATE cart_items SET quantity = quantity + ?, updated_at = ? WHERE id = ?',
-                         [quantity, brasilia_now(), existing['id']])
-            else:
-                insert_db('INSERT INTO cart_items (customer_id, product_id, quantity, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-                         [customer_id, product_id, quantity, brasilia_now(), brasilia_now()])
-        else:
-            existing = query_db('SELECT * FROM cart_items WHERE session_id = ? AND product_id = ?', 
-                              [session_id, product_id], one=True)
-            if existing:
-                update_db('UPDATE cart_items SET quantity = quantity + ?, updated_at = ? WHERE id = ?',
-                         [quantity, brasilia_now(), existing['id']])
-            else:
-                insert_db('INSERT INTO cart_items (session_id, product_id, quantity, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-                         [session_id, product_id, quantity, brasilia_now(), brasilia_now()])
-
-        return jsonify({'success': True})
-
-    elif request.method == 'PUT':
-        data = request.get_json()
-        item_id = data.get('item_id')
-        quantity = data.get('quantity')
-
-        update_db('UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ?',
-                 [quantity, brasilia_now(), item_id])
-        return jsonify({'success': True})
-
-    elif request.method == 'DELETE':
-        item_id = request.args.get('item_id')
-        if item_id:
-            update_db('DELETE FROM cart_items WHERE id = ?', [item_id])
-        return jsonify({'success': True})
-
-@app.route('/api/checkout', methods=['POST'])
-def checkout():
-    session_id = session.get('session_id') or session.get('customer_id')
-    customer_id = session.get('customer_id')
-
-    if customer_id:
-        cart_items = query_db('''
-            SELECT ci.*, p.name, p.price, p.image_url 
-            FROM cart_items ci 
-            JOIN products p ON ci.product_id = p.id 
-            WHERE ci.customer_id = ?
-        ''', [customer_id])
-    else:
-        cart_items = query_db('''
-            SELECT ci.*, p.name, p.price, p.image_url 
-            FROM cart_items ci 
-            JOIN products p ON ci.product_id = p.id 
-            WHERE ci.session_id = ?
-        ''', [session_id])
-
-    if not cart_items:
-        return jsonify({'success': False, 'error': 'Carrinho vazio'})
-
-    data = request.get_json()
-    payment_method = data.get('payment_method', 'pending')
-    troco = data.get('troco')
-
-    subtotal = sum(item['price'] * item['quantity'] for item in cart_items)
-    shipping = 15.00
-    total = subtotal + shipping
-
-    customer = None
-    delivery_address = 'Endereço não informado'
-    if customer_id:
-        customer = query_db('SELECT * FROM customers WHERE id = ?', [customer_id], one=True)
-        if customer:
-            delivery_address = f"{customer['address']}, {customer['number']} {customer['complement'] or ''} - {customer['neighborhood']}, {customer['city']}/{customer['state']}"
-
-    notes = f"Forma de Pagamento: {payment_method.upper()}"
-    if payment_method == 'dinheiro' and troco:
-        if troco == 'nao':
-            notes += " | Troco: Não precisa"
-        else:
-            notes += f" | Troco para: {troco}"
-
-    order_id = insert_db('''
-        INSERT INTO orders (customer_id, subtotal, shipping, discount, total, status, payment_method, shipping_address, notes, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', [
-        customer_id,
-        subtotal,
-        shipping,
-        0,
-        total,
-        'pending',
-        payment_method,
-        delivery_address,
-        notes,
-        brasilia_now(),
-        brasilia_now()
-    ])
-
-    for item in cart_items:
-        insert_db('''
-            INSERT INTO order_items (order_id, product_id, quantity, price, created_at)
-            VALUES (?, ?, ?, ?, ?)
-        ''', [
-            order_id,
-            item['product_id'],
-            item['quantity'],
-            item['price'],
-            brasilia_now()
-        ])
-
-    if customer_id:
-        update_db('DELETE FROM cart_items WHERE customer_id = ?', [customer_id])
-    else:
-        update_db('DELETE FROM cart_items WHERE session_id = ?', [session_id])
-
-    insert_db('INSERT INTO order_logs (order_id, status, notes, created_at) VALUES (?, ?, ?, ?)',
-             [order_id, 'pending', 'Pedido criado via loja', brasilia_now()])
-
-    return jsonify({
-        'success': True, 
-        'order_id': order_id,
-        'message': 'Pedido enviado com sucesso!'
-    })
-
-@app.route('/api/admin/dashboard')
-@admin_required
-def admin_dashboard_data():
-    today = brasilia_now().date()
-    month_start = today.replace(day=1)
-
-    total_customers = query_db('SELECT COUNT(*) as count FROM customers', one=True)['count']
-    total_orders = query_db('SELECT COUNT(*) as count FROM orders', one=True)['count']
-    total_products = query_db('SELECT COUNT(*) as count FROM products WHERE active = 1', one=True)['count']
-
-    total_revenue = query_db('SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE status != "cancelled"', one=True)['total']
-    month_revenue = query_db('''
-        SELECT COALESCE(SUM(total), 0) as total FROM orders 
-        WHERE status != "cancelled" AND date(created_at) >= ?
-    ''', [month_start], one=True)['total']
-
-    today_orders = query_db('SELECT COUNT(*) as count FROM orders WHERE date(created_at) = ?', [today], one=True)['count']
-    pending_orders = query_db('SELECT COUNT(*) as count FROM orders WHERE status = "pending"', one=True)['count']
-
-    abandoned_carts = query_db('''
-        SELECT COUNT(DISTINCT COALESCE(customer_id, session_id)) as count 
-        FROM cart_items 
-        WHERE updated_at < datetime("now", "-24 hours")
-    ''', one=True)['count']
-
-    recent_orders = query_db('''
-        SELECT o.*, c.name as customer_name 
-        FROM orders o 
-        LEFT JOIN customers c ON o.customer_id = c.id 
-        ORDER BY o.created_at DESC LIMIT 10
-    ''')
-
-    sales_by_day = query_db('''
-        SELECT date(created_at) as date, SUM(total) as total, COUNT(*) as count
-        FROM orders WHERE status != "cancelled"
-        GROUP BY date(created_at)
-        ORDER BY date DESC LIMIT 30
-    ''')
-
-    top_products = query_db('''
-        SELECT p.name, SUM(oi.quantity) as total_sold, SUM(oi.quantity * oi.price) as revenue
-        FROM order_items oi
-        JOIN products p ON oi.product_id = p.id
-        GROUP BY p.id
-        ORDER BY total_sold DESC LIMIT 10
-    ''')
-
-    orders_by_status = query_db('''
-        SELECT status, COUNT(*) as count FROM orders GROUP BY status
-    ''')
-
-    return jsonify({
-        'total_customers': total_customers,
-        'total_orders': total_orders,
-        'total_products': total_products,
-        'total_revenue': total_revenue,
-        'month_revenue': month_revenue,
-        'today_orders': today_orders,
-        'pending_orders': pending_orders,
-        'abandoned_carts': abandoned_carts,
-        'recent_orders': [dict(o) for o in recent_orders],
-        'sales_by_day': [dict(s) for s in sales_by_day],
-        'top_products': [dict(p) for p in top_products],
-        'orders_by_status': [dict(o) for o in orders_by_status]
-    })
-
-@app.route('/api/admin/products', methods=['GET', 'POST', 'PUT', 'DELETE'])
-@admin_required
-def admin_products():
-    if request.method == 'GET':
-        products = query_db('''
-            SELECT p.*, c.name as category_name 
-            FROM products p 
-            LEFT JOIN categories c ON p.category_id = c.id 
-            ORDER BY p.created_at DESC
-        ''')
-        return jsonify([dict(p) for p in products])
-
-    elif request.method == 'POST':
-        data = request.get_json()
-        product_id = insert_db('''
-            INSERT INTO products (name, description, price, image_url, category_id, stock, active, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', [data['name'], data.get('description', ''), data['price'], 
-              data.get('image_url', ''), data.get('category_id'), 
-              data.get('stock', 0), data.get('active', 1), brasilia_now()])
-        return jsonify({'success': True, 'id': product_id})
-
-    elif request.method == 'PUT':
-        data = request.get_json()
-        update_db('''
-            UPDATE products SET name = ?, description = ?, price = ?, image_url = ?, 
-            category_id = ?, stock = ?, active = ? WHERE id = ?
-        ''', [data['name'], data.get('description', ''), data['price'], 
-              data.get('image_url', ''), data.get('category_id'), 
-              data.get('stock', 0), data.get('active', 1), data['id']])
-        return jsonify({'success': True})
-
-    elif request.method == 'DELETE':
-        product_id = request.args.get('id')
-        update_db('UPDATE products SET active = 0 WHERE id = ?', [product_id])
-        return jsonify({'success': True})
-
-@app.route('/api/admin/categories', methods=['GET', 'POST', 'PUT', 'DELETE'])
-@admin_required
-def admin_categories():
-    if request.method == 'GET':
-        categories = query_db('SELECT * FROM categories ORDER BY name')
-        return jsonify([dict(c) for c in categories])
-
-    elif request.method == 'POST':
-        data = request.get_json()
-        cat_id = insert_db('INSERT INTO categories (name, description, active) VALUES (?, ?, ?)',
-                          [data['name'], data.get('description', ''), 1])
-        return jsonify({'success': True, 'id': cat_id})
-
-    elif request.method == 'PUT':
-        data = request.get_json()
-        update_db('UPDATE categories SET name = ?, description = ?, active = ? WHERE id = ?',
-                 [data['name'], data.get('description', ''), data.get('active', 1), data['id']])
-        return jsonify({'success': True})
-
-    elif request.method == 'DELETE':
-        cat_id = request.args.get('id')
-        update_db('UPDATE categories SET active = 0 WHERE id = ?', [cat_id])
-        return jsonify({'success': True})
-
-# === API: Obter Configurações da Loja ===
-@app.route('/api/store/settings', methods=['GET'])
-@admin_required
-def get_store_settings():
-    try:
-        conn = get_db_connection()
-        settings = conn.execute('SELECT * FROM store_settings WHERE id = 1').fetchone()
-        conn.close()
-
-        if settings:
-            return jsonify({
-                'success': True,
-                'data': dict(settings)
-            })
-        else:
-            # Retornar configurações padrão
-            return jsonify({
-                'success': True,
-                'data': {
-                    'id': 1,
-                    'store_name': 'Ariguá Distribuidora',
-                    'store_logo': '/static/images/logo-arigua.png',
-                    'store_phone': '(31) 99212-2844',
-                    'store_email': 'contato@arigua.com.br',
-                    'store_address': 'R. Rio Xingu, 753 - Riacho, Contagem - MG',
-                    'store_cep': '32265-290',
-                    'delivery_radius_km': 10.0,
-                    'delivery_fee': 5.00,
-                    'min_order_value': 20.00
-                }
-            })
-    except Exception as e:
-        print(f"Erro ao obter configurações: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-# === API: Salvar Configurações da Loja ===
-@app.route('/api/store/settings', methods=['POST'])
-@admin_required
-def save_store_settings():
-    try:
-        data = request.json
-        conn = get_db_connection()
-
-        # Verificar se já existe configuração
-        existing = conn.execute('SELECT id FROM store_settings WHERE id = 1').fetchone()
-
-        if existing:
-            # Atualizar
-            conn.execute('''
-                UPDATE store_settings SET
-                    store_name = ?,
-                    store_phone = ?,
-                    store_email = ?,
-                    store_address = ?,
-                    store_cep = ?,
-                    delivery_radius_km = ?,
-                    delivery_fee = ?,
-                    min_order_value = ?
-                WHERE id = 1
-            ''', (
-                data.get('store_name'),
-                data.get('store_phone'),
-                data.get('store_email'),
-                data.get('store_address'),
-                data.get('store_cep'),
-                data.get('delivery_radius_km'),
-                data.get('delivery_fee'),
-                data.get('min_order_value')
-            ))
-        else:
-            # Inserir
-            conn.execute('''
-                INSERT INTO store_settings (
-                    id, store_name, store_phone, store_email, 
-                    store_address, store_cep, delivery_radius_km,
-                    delivery_fee, min_order_value
-                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                data.get('store_name'),
-                data.get('store_phone'),
-                data.get('store_email'),
-                data.get('store_address'),
-                data.get('store_cep'),
-                data.get('delivery_radius_km'),
-                data.get('delivery_fee'),
-                data.get('min_order_value')
-            ))
-
-        conn.commit()
-        conn.close()
-
-        return jsonify({'success': True, 'message': 'Configurações salvas com sucesso!'})
-    except Exception as e:
-        print(f"Erro ao salvar configurações: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-# === API: Verificar Raio de Entrega ===
-@app.route('/api/check-delivery', methods=['POST'])
-def check_delivery_radius():
-    try:
-        data = request.json
-        customer_cep = data.get('cep', '').replace('-', '').replace('.', '')
-
-        if not customer_cep or len(customer_cep) != 8:
-            return jsonify({'success': False, 'message': 'CEP inválido'})
-
-        # Obter configurações da loja
-        conn = get_db_connection()
-        settings = conn.execute('SELECT store_cep, delivery_radius_km FROM store_settings WHERE id = 1').fetchone()
-        conn.close()
-
-        if not settings or not settings['store_cep']:
-            return jsonify({'success': True, 'delivers': True, 'message': 'Raio de entrega não configurado'})
-
-        store_cep = settings['store_cep'].replace('-', '').replace('.', '')
-        radius_km = float(settings['delivery_radius_km'] or 10)
-
-        # Calcular distância usando API ViaCEP + geolocalização simples
-        import requests
-
-        # Obter coordenadas do CEP da loja
-        store_response = requests.get(f'https://viacep.com.br/ws/{store_cep}/json/')
-        if store_response.status_code != 200:
-            return jsonify({'success': True, 'delivers': True, 'message': 'Erro ao verificar CEP da loja'})
-
-        # Obter coordenadas do CEP do cliente
-        customer_response = requests.get(f'https://viacep.com.br/ws/{customer_cep}/json/')
-        if customer_response.status_code != 200:
-            return jsonify({'success': False, 'message': 'CEP do cliente não encontrado'})
-
-        customer_data = customer_response.json()
-        if 'erro' in customer_data:
-            return jsonify({'success': False, 'message': 'CEP do cliente inválido'})
-
-        # Verificação simplificada por bairro/cidade
-        store_data = store_response.json()
-
-        # Se for mesma cidade, aceitar
-        if store_data.get('localidade') == customer_data.get('localidade'):
-            return jsonify({
-                'success': True,
-                'delivers': True,
-                'message': f'Entregamos em {customer_data.get("localidade")}!'
-            })
-
-        # Caso contrário, não entrega
-        return jsonify({
-            'success': True,
-            'delivers': False,
-            'message': f'Desculpe, não entregamos em {customer_data.get("localidade")}. Entregamos apenas em {store_data.get("localidade")}.'
-        })
-
-    except Exception as e:
-        print(f"Erro ao verificar raio de entrega: {e}")
-        # Em caso de erro, permitir entrega
-        return jsonify({'success': True, 'delivers': True, 'message': 'Erro ao verificar entrega, mas pedido será aceito'})
-
-
 @app.route('/api/admin/orders', methods=['GET', 'PUT'])
 @admin_required
 def admin_orders():
@@ -1657,7 +1118,6 @@ IMPORTANTE:
 - Sempre confirme se é pack quando a quantidade for pequena (1-3 unidades)
 - Use apenas product_id válidos da lista
 - Seja claro sobre o que vem no pedido
-- Ajude com acompanhamento de pedidos quando solicitado
 """
 
         response = gemini_chat.chat(content, context)
@@ -1910,7 +1370,7 @@ def process_without_ai(content_lower, session_id=None, conv_data=None):
         return "Nosso horário:\n\nSeg a Sex: 08:30 às 17:30\nSábado: 08:30 às 12:30\nDomingo: Fechado"
 
     # Catálogo/produtos
-    if any(word in content_lower for word in ['produto', 'produtos', 'catalogo', 'catálogo', 'cardapio', 'cardápio', 'menu', 'o que tem', 'que vende']):
+    if any(word in content_lower for word in ['produto', 'produtos', 'catalogo', 'cardapio', 'cardápio', 'menu', 'o que tem', 'que vende']):
         products = query_db('SELECT name, price FROM products WHERE active = 1 LIMIT 8')
         if products:
             prod_list = "\n".join([f"• {p['name']} - R$ {p['price']:.2f}" for p in products])
@@ -2616,7 +2076,7 @@ def process_chat_message(session_id, content, conv_data):
             # Dados confirmados - mostrar produtos diretamente
             active_conversations[session_id]['state'] = 'browsing_products'
             first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
-            return f"[SHOW_PRODUCTS]Perfeito, {first_name}! Veja nossos produtos abaixo:"
+            return f"[SHOW_PRODUCTS]Perfeito, {first_name}! Endereço confirmado!\n\nVeja nossos produtos abaixo:"
         elif any(word in content_lower for word in ['não', 'nao', 'n', 'no', 'errado', 'outro']):
             # Dados incorretos - pedir telefone novamente
             active_conversations[session_id]['state'] = 'awaiting_phone_first'
@@ -2630,7 +2090,7 @@ def process_chat_message(session_id, content, conv_data):
     if state == 'awaiting_name_new':
         name_parts = content.strip().split()
         if len(name_parts) < 2:
-            return "Preciso do nome completo, tipo: Maria Santos"
+            return "Legal! Mas preciso do seu nome completo, tipo: Maria Santos"
 
         full_name = ' '.join(name_parts).title()
         active_conversations[session_id]['data']['name'] = full_name
@@ -2663,12 +2123,6 @@ def process_chat_message(session_id, content, conv_data):
         except Exception as e:
             print(f"Erro ao buscar CEP: {e}")
             return "Erro ao buscar CEP. Tenta de novo?"
-
-    # Finalizando novo cadastro
-    if state == 'awaiting_number_new':
-        active_conversations[session_id]['data']['number'] = content.strip()
-        active_conversations[session_id]['state'] = 'awaiting_complement_new'
-        return "Complemento? (apt, bloco, etc)\n\nSe não tiver, digite NÃO"
 
     # ============ FIM DOS NOVOS ESTADOS ============
 
@@ -2878,7 +2332,7 @@ def process_chat_message(session_id, content, conv_data):
         # Comandos rápidos especiais - processar diretamente sem IA
 
         # Detectar intenção de fazer pedido - mostrar cards de produtos
-        if any(word in content_lower for word in ['quero fazer um pedido', 'fazer pedido', 'quero pedir', 'fazer um pedido', 'quero comprar', 'ver produtos', 'produtos', 'catalogo', 'catálogo', 'cardapio', 'cardápio', 'menu']):
+        if any(word in content_lower for word in ['quero fazer um pedido', 'fazer pedido', 'quero pedir', 'fazer um pedido', 'quero comprar', 'ver produtos', 'produtos', 'catalogo', 'cardapio', 'cardápio', 'menu']):
             # Mudar estado para navegação de produtos
             active_conversations[session_id]['state'] = 'browsing_products'
             active_conversations[session_id]['data']['customer_id'] = customer_id
@@ -3086,7 +2540,7 @@ def process_chat_message(session_id, content, conv_data):
             else:
                 active_conversations[session_id]['state'] = 'awaiting_name'
                 return "Oi! Qual é seu nome completo?"
-        elif any(word in content_lower for word in ['não', 'nao', 'n', 'no', 'mudar', 'atualizar']):
+        elif any(word in content_lower for word in ['não', 'nao', 'n', 'mudar', 'atualizar']):
             # Cliente quer atualizar endereço
             active_conversations[session_id]['state'] = 'awaiting_cep'
             return "Sem problemas! Vamos atualizar.\n\nQual é o seu CEP?"
@@ -3099,13 +2553,13 @@ def process_chat_message(session_id, content, conv_data):
         if any(word in content_lower for word in ['1', 'chat', 'aqui', 'conversa']):
             active_conversations[session_id]['state'] = 'browsing_products'
             active_conversations[session_id]['data']['customer_id'] = customer_id
-            return "[SHOW_PRODUCTS]Ótimo! Veja os produtos abaixo:\n\nClique no botão *+* para adicionar ao carrinho.\n\nQuando terminar, clique em *Finalizar Pedido*!"
+            return "[SHOW_PRODUCTS]Ótimo! Para comprar, use os cards abaixo e clique no '+' para adicionar ao carrinho. Quando terminar, clique em 'Finalizar Pedido'!"
         elif any(word in content_lower for word in ['2', 'loja', 'site', 'virtual']):
             active_conversations[session_id]['state'] = 'registered'
             active_conversations[session_id]['data']['customer_id'] = customer_id
             return "Perfeito! Clica no botão da Loja aí embaixo! [redirect:loja]"
         else:
-            return "Como quer continuar?\n\n1️⃣ Ver produtos aqui no chat\n2️⃣ Ir para a loja online\n\nDigite 1 ou 2"
+            return f"✅ Login realizado!\n\nComo você quer continuar?\n\n1️⃣ Continuar no chat\n2️⃣ Direcionar pro site\n\nDigite 1 ou 2"
 
     # Processando forma de pagamento
     if state == 'awaiting_payment_method':
