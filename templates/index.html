@@ -323,31 +323,148 @@
 }
 
 @media (max-width: 768px) {
+    .landing-page {
+        padding: 15px;
+    }
+
     .logo-image {
-        max-width: 220px;
+        max-width: 200px;
     }
 
     .hero-subtitle {
         font-size: 16px;
+        margin-bottom: 25px;
     }
 
     .features-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .feature-card {
+        padding: 20px 15px;
     }
 
     .contact-info {
         grid-template-columns: 1fr;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .contact-card {
+        padding: 18px 15px;
+    }
+
+    .contact-card h3 {
+        font-size: 15px;
+    }
+
+    .contact-card p {
+        font-size: 13px;
     }
 
     .btn-lg {
         padding: 15px 25px;
-        font-size: 16px;
+        font-size: 15px;
         width: 100%;
         justify-content: center;
     }
 
     .cta-buttons {
         flex-direction: column;
+        gap: 12px;
+    }
+
+    .floating-whatsapp-button {
+        bottom: 20px;
+        right: 20px;
+        width: 55px;
+        height: 55px;
+        font-size: 26px;
+    }
+}
+
+@media (max-width: 480px) {
+    .landing-page {
+        padding: 10px;
+    }
+
+    .logo-image {
+        max-width: 180px;
+    }
+
+    .hero-subtitle {
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+
+    .features-grid {
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .feature-card {
+        padding: 18px 12px;
+    }
+
+    .feature-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+
+    .feature-card h3 {
+        font-size: 16px;
+    }
+
+    .feature-card p {
+        font-size: 13px;
+    }
+
+    .contact-info {
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .contact-card {
+        padding: 15px 12px;
+    }
+
+    .contact-card h3 {
+        font-size: 14px;
+    }
+
+    .contact-card p {
+        font-size: 12px;
+    }
+
+    .whatsapp-link {
+        font-size: 13px;
+        padding: 7px 14px;
+    }
+
+    .btn-lg {
+        padding: 14px 20px;
+        font-size: 14px;
+    }
+
+    .cta-buttons {
+        gap: 10px;
+    }
+
+    .floating-whatsapp-button {
+        bottom: 15px;
+        right: 15px;
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+    }
+
+    .index-footer {
+        font-size: 10px;
+        margin-top: 20px;
+        padding-bottom: 15px;
     }
 }
 

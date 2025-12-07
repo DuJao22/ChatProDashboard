@@ -473,6 +473,80 @@ html, body {
     justify-content: center;
 }
 
+@media (max-width: 768px) {
+    .chat-container {
+        max-width: 100%;
+    }
+
+    .chat-header {
+        padding: 12px 12px;
+    }
+
+    .header-left {
+        gap: 10px;
+    }
+
+    .avatar {
+        width: 42px;
+        height: 42px;
+        font-size: 19px;
+    }
+
+    .header-info h1 {
+        font-size: 15px;
+    }
+
+    .status {
+        font-size: 12px;
+    }
+
+    .chat-messages {
+        padding: 12px;
+    }
+
+    .message {
+        max-width: 80%;
+    }
+
+    .message-bubble {
+        padding: 9px 13px;
+        font-size: 14px;
+    }
+
+    .quick-actions {
+        padding: 10px 12px;
+    }
+
+    .quick-action-btn {
+        padding: 9px 15px;
+        font-size: 13px;
+    }
+
+    .chat-input-container {
+        padding: 10px 12px;
+    }
+
+    .input-wrapper input {
+        font-size: 15px;
+    }
+
+    .send-btn {
+        width: 46px;
+        height: 46px;
+    }
+
+    .floating-buttons {
+        bottom: 85px;
+        right: 12px;
+    }
+
+    .fab {
+        width: 52px;
+        height: 52px;
+        font-size: 19px;
+    }
+}
+
 @media (max-width: 500px) {
     .chat-container {
         max-width: 100%;
@@ -483,15 +557,15 @@ html, body {
     }
 
     .message.user {
-        margin-right: 80px;
+        margin-right: 60px;
     }
 
     .message.bot {
-        margin-left: 10px;
+        margin-left: 8px;
     }
 
     .chat-header {
-        padding: 12px 10px;
+        padding: 10px;
     }
 
     .header-left {
@@ -499,13 +573,13 @@ html, body {
     }
 
     .avatar {
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
+        width: 38px;
+        height: 38px;
+        font-size: 17px;
     }
 
     .header-info h1 {
-        font-size: 15px;
+        font-size: 14px;
     }
 
     .status {
@@ -513,46 +587,56 @@ html, body {
     }
 
     .back-btn {
-        font-size: 18px;
+        font-size: 17px;
         padding: 6px;
     }
 
+    .header-btn {
+        font-size: 16px;
+        padding: 8px;
+    }
+
     .chat-messages {
-        padding: 12px 10px 20px 10px;
+        padding: 10px 8px 15px 8px;
     }
 
     .message-bubble {
-        padding: 8px 12px;
-        font-size: 14px;
+        padding: 8px 11px;
+        font-size: 13px;
         max-width: 100%;
     }
 
     .message-content {
         font-size: 13px;
-        line-height: 1.4;
+        line-height: 1.5;
+    }
+
+    .message-time {
+        font-size: 10px;
+        margin-top: 3px;
     }
 
     .quick-actions {
-        padding: 8px 10px;
+        padding: 8px;
         gap: 6px;
-        margin-bottom: 10px;
     }
 
     .quick-action-btn {
-        padding: 8px 14px;
+        padding: 7px 12px;
         font-size: 12px;
     }
 
+    .quick-action-btn i {
+        font-size: 13px;
+    }
+
     .chat-input-container {
-        padding: 8px 10px;
+        padding: 8px;
         gap: 8px;
-        background: #f0f0f0;
-        z-index: 50;
-        flex-shrink: 0;
     }
 
     .input-wrapper {
-        padding: 4px 12px;
+        padding: 3px 10px;
     }
 
     .input-wrapper input {
@@ -561,50 +645,173 @@ html, body {
     }
 
     .emoji-btn, .attach-btn {
-        font-size: 20px;
+        font-size: 19px;
+        padding: 4px;
     }
 
     .send-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 16px;
+        width: 42px;
+        height: 42px;
+        font-size: 15px;
     }
 
     .floating-buttons {
-        bottom: 80px;
+        bottom: 75px;
         right: 10px;
         gap: 8px;
-        z-index: 60;
     }
 
     .fab {
-        width: 50px;
-        height: 50px;
-        font-size: 18px;
+        width: 48px;
+        height: 48px;
+        font-size: 17px;
     }
 
     .cart-badge {
-        top: -4px;
-        right: -4px;
-        min-width: 18px;
-        height: 18px;
+        top: -3px;
+        right: -3px;
+        min-width: 17px;
+        height: 17px;
         font-size: 10px;
     }
 
     .header-menu {
-        top: 56px;
+        top: 52px;
         right: 8px;
         min-width: 160px;
     }
 
     .menu-item {
-        padding: 12px 16px;
+        padding: 11px 14px;
         font-size: 13px;
     }
 
     .chat-date span {
-        padding: 5px 12px;
+        padding: 5px 11px;
         font-size: 11px;
+    }
+
+    .chat-products-container {
+        margin: 8px 0;
+        padding: 12px;
+    }
+
+    .chat-categories {
+        gap: 6px;
+    }
+
+    .chat-category-btn {
+        padding: 7px 13px;
+        font-size: 11px;
+    }
+
+    .chat-products-grid {
+        gap: 10px;
+        max-height: 350px;
+    }
+
+    .chat-product-name {
+        font-size: 11px;
+    }
+
+    .chat-product-price {
+        font-size: 13px;
+    }
+
+    .chat-add-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 13px;
+    }
+
+    .finish-order-btn {
+        padding: 12px 18px;
+        font-size: 14px;
+    }
+
+    .toast {
+        bottom: 90px;
+        font-size: 13px;
+        padding: 10px 20px;
+    }
+}
+
+@media (max-width: 380px) {
+    .chat-header {
+        padding: 8px;
+    }
+
+    .header-info h1 {
+        font-size: 13px;
+    }
+
+    .avatar {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+
+    .message {
+        max-width: 70%;
+    }
+
+    .message.user {
+        margin-right: 50px;
+    }
+
+    .message-bubble {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+
+    .message-content {
+        font-size: 12px;
+    }
+
+    .quick-action-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
+    .input-wrapper input {
+        font-size: 13px;
+    }
+
+    .floating-buttons {
+        bottom: 70px;
+        right: 8px;
+    }
+
+    .fab {
+        width: 44px;
+        height: 44px;
+        font-size: 16px;
+    }
+
+    .chat-products-grid {
+        gap: 8px;
+    }
+
+    .chat-product-card {
+        border-radius: 10px;
+    }
+
+    .chat-product-info {
+        padding: 6px;
+    }
+
+    .chat-product-name {
+        font-size: 10px;
+    }
+
+    .chat-product-price {
+        font-size: 12px;
+    }
+
+    .chat-add-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
     }
 }
 

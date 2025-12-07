@@ -595,18 +595,322 @@ html, body {
     }
 }
 
+@media (max-width: 768px) {
+    .carrinho-header {
+        padding: 12px 15px;
+    }
+
+    .carrinho-header h1 {
+        font-size: 17px;
+    }
+
+    .back-btn, .clear-cart-btn {
+        font-size: 17px;
+    }
+
+    .carrinho-content {
+        padding: 15px;
+        padding-bottom: 200px;
+    }
+
+    .cart-item {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .cart-item-image {
+        width: 75px;
+        height: 75px;
+    }
+
+    .cart-item-name {
+        font-size: 13px;
+    }
+
+    .cart-item-price {
+        font-size: 15px;
+    }
+
+    .quantity-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 15px;
+    }
+
+    .quantity-value {
+        font-size: 14px;
+    }
+
+    .remove-item-btn {
+        font-size: 17px;
+    }
+
+    .carrinho-footer {
+        padding: 18px 15px;
+    }
+
+    .summary-row {
+        font-size: 13px;
+    }
+
+    .summary-row.total {
+        font-size: 17px;
+    }
+
+    .checkout-btn, .login-btn {
+        padding: 16px;
+        font-size: 15px;
+    }
+
+    .whatsapp-order-btn {
+        padding: 13px;
+        font-size: 14px;
+    }
+
+    .floating-whatsapp {
+        bottom: 240px;
+        right: 15px;
+        width: 52px;
+        height: 52px;
+        font-size: 24px;
+    }
+}
+
 @media (max-width: 600px) {
     .carrinho-container {
         max-width: 100%;
     }
+
+    .carrinho-header {
+        padding: 10px 12px;
+    }
+
+    .carrinho-header h1 {
+        font-size: 16px;
+    }
+
+    .back-btn, .clear-cart-btn {
+        font-size: 16px;
+        padding: 6px;
+    }
+
+    .carrinho-content {
+        padding: 12px;
+        padding-bottom: 190px;
+    }
+
+    .cart-items {
+        gap: 12px;
+    }
+
+    .cart-item {
+        padding: 10px;
+        gap: 10px;
+        border-radius: 12px;
+    }
+
+    .cart-item-image {
+        width: 70px;
+        height: 70px;
+        border-radius: 10px;
+    }
+
+    .cart-item-name {
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    .cart-item-price {
+        font-size: 14px;
+    }
+
+    .quantity-control {
+        gap: 10px;
+        padding: 4px;
+    }
+
+    .quantity-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 14px;
+    }
+
+    .quantity-value {
+        font-size: 13px;
+        min-width: 20px;
+    }
+
+    .remove-item-btn {
+        font-size: 16px;
+        padding: 6px;
+    }
+
+    .cart-empty {
+        padding: 50px 15px;
+    }
+
+    .cart-empty i {
+        font-size: 70px;
+    }
+
+    .cart-empty h3 {
+        font-size: 18px;
+    }
+
+    .cart-empty p {
+        font-size: 14px;
+    }
+
+    .cart-empty .btn {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
     
     .carrinho-footer {
         max-width: 100%;
-        border-radius: 20px 20px 0 0;
+        border-radius: 18px 18px 0 0;
+        padding: 16px 12px;
+    }
+
+    .cart-summary {
+        margin-bottom: 12px;
+    }
+
+    .summary-row {
+        padding: 6px 0;
+        font-size: 13px;
+    }
+
+    .summary-row.total {
+        font-size: 16px;
+        padding-top: 12px;
+        margin-top: 4px;
+    }
+
+    .checkout-btn, .login-btn {
+        padding: 15px;
+        font-size: 14px;
+    }
+
+    .whatsapp-order-btn {
+        padding: 12px;
+        font-size: 13px;
+        margin-top: 8px;
+    }
+
+    .floating-whatsapp {
+        bottom: 220px;
+        right: 12px;
+        width: 50px;
+        height: 50px;
+        font-size: 22px;
     }
     
     .modal-content {
         width: 95%;
         margin: 10px;
+        border-radius: 18px;
+    }
+
+    .modal-header {
+        padding: 16px 15px;
+    }
+
+    .modal-header h2 {
+        font-size: 18px;
+    }
+
+    .modal-body {
+        padding: 16px 15px;
+    }
+
+    .modal-body > p {
+        font-size: 15px;
+    }
+
+    .payment-option-btn {
+        padding: 15px 16px;
+        font-size: 15px;
+    }
+
+    .payment-option-btn i {
+        font-size: 22px;
+    }
+
+    #trocoSection {
+        padding: 16px;
+    }
+
+    #trocoSection h3 {
+        font-size: 15px;
+    }
+
+    .troco-btn {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+
+    #trocoInput {
+        padding: 12px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .carrinho-content {
+        padding: 10px;
+        padding-bottom: 180px;
+    }
+
+    .cart-item {
+        padding: 8px;
+    }
+
+    .cart-item-image {
+        width: 65px;
+        height: 65px;
+    }
+
+    .cart-item-name {
+        font-size: 11px;
+    }
+
+    .cart-item-price {
+        font-size: 13px;
+    }
+
+    .quantity-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 13px;
+    }
+
+    .quantity-value {
+        font-size: 12px;
+    }
+
+    .carrinho-footer {
+        padding: 14px 10px;
+    }
+
+    .summary-row {
+        font-size: 12px;
+    }
+
+    .summary-row.total {
+        font-size: 15px;
+    }
+
+    .checkout-btn, .login-btn {
+        padding: 14px;
+        font-size: 13px;
+    }
+
+    .floating-whatsapp {
+        bottom: 210px;
+        right: 10px;
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
     }
 }
