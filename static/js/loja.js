@@ -109,48 +109,71 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `).join('');
 
+        // Adicionar evento de clique aos botões com delegação
         document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
+                e.preventDefault();
                 e.stopPropagation();
+                
                 const productId = this.dataset.id;
-                const productName = this.closest('.product-card').querySelector('.product-name').textContent;
+                const productCard = this.closest('.product-card');
+                const productName = productCard.querySelector('.product-name').textContent;
+                
+                console.log('🎯 Botão clicado:', { productId, productName });
+                
+                // Feedback visual
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
                 addToCart(productId, productName);
+                
+                // Reativar botão após 1 segundo
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-plus"></i>';
+                }, 1000);
             });
         });
     }
 
     function addToCart(productId, productName) {
-        console.log('Adicionando ao carrinho:', productId, productName);
+        console.log('🛒 Adicionando ao carrinho:', productId, productName);
 
         fetch('/api/cart', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include', // Garantir que cookies de sessão sejam enviados
             body: JSON.stringify({
-                product_id: productId,
+                product_id: parseInt(productId),
                 quantity: 1
             })
         })
         .then(response => {
-            console.log('Response status:', response.status);
+            console.log('📡 Response status:', response.status);
+            console.log('📡 Response type:', response.headers.get('content-type'));
+            
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                return response.text().then(text => {
+                    console.error('❌ Erro response:', text);
+                    throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
+                });
             }
             return response.json();
         })
         .then(data => {
-            console.log('Cart response:', data);
+            console.log('✅ Cart response:', data);
             if (data.success) {
-                showToast(`${productName} adicionado ao carrinho!`);
+                showToast(`${productName} adicionado ao carrinho!`, 'success');
                 updateCartBadge();
             } else {
-                showToast(data.error || 'Erro ao adicionar');
+                showToast(data.error || 'Erro ao adicionar', 'error');
             }
         })
         .catch(err => {
-            console.error('Error adding to cart:', err);
-            showToast('Erro ao adicionar produto');
+            console.error('❌ Error adding to cart:', err);
+            showToast('Erro ao adicionar produto', 'error');
         });
     }
 

@@ -1610,6 +1610,22 @@ def admin_report_customers():
         'top_customers': [dict(t) for t in top_customers]
     })
 
+@app.route('/api/products', methods=['GET'])
+def api_products():
+    """Retorna lista de produtos ativos"""
+    try:
+        products = query_db('''
+            SELECT p.*, c.name as category_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.category_id = c.id 
+            WHERE p.active = 1
+            ORDER BY p.name
+        ''')
+        return jsonify([dict(p) for p in products])
+    except Exception as e:
+        print(f"Erro ao buscar produtos: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/cart', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def api_cart():
     """API do carrinho - GET para listar, POST para adicionar, PUT para atualizar, DELETE para remover"""
