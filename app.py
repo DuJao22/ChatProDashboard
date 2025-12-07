@@ -1613,14 +1613,15 @@ def admin_report_customers():
 @app.route('/api/cart', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def api_cart():
     """API do carrinho - GET para listar, POST para adicionar, PUT para atualizar, DELETE para remover"""
-    session_id = session.get('session_id')
-    customer_id = session.get('customer_id')
-    
-    if not session_id and not customer_id:
-        session['session_id'] = generate_token()
-        session_id = session['session_id']
-    
-    if request.method == 'GET':
+    try:
+        session_id = session.get('session_id')
+        customer_id = session.get('customer_id')
+        
+        if not session_id and not customer_id:
+            session['session_id'] = generate_token()
+            session_id = session['session_id']
+        
+        if request.method == 'GET':
         # Listar itens do carrinho
         if customer_id:
             items = query_db('''
@@ -1721,6 +1722,12 @@ def api_cart():
             update_db('DELETE FROM cart_items WHERE id = ? AND session_id = ?', [item_id, session_id])
         
         return jsonify({'success': True})
+    
+    except Exception as e:
+        print(f"❌ Erro na API do carrinho: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/checkout', methods=['POST'])
 def api_checkout():

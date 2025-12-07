@@ -223,15 +223,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 quantity: 1
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 showToast(`${productName} adicionado!`);
                 updateCartBadge();
                 updateFinishOrderBadge();
+            } else {
+                showToast(data.error || 'Erro ao adicionar');
             }
         })
-        .catch(err => console.error('Error adding to cart:', err));
+        .catch(err => {
+            console.error('Error adding to cart:', err);
+            showToast('Erro ao adicionar produto');
+        });
     }
 
     function updateFinishOrderBadge() {

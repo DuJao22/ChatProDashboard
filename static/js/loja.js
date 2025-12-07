@@ -112,25 +112,46 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                addToCart(this.dataset.id);
+                const productId = this.dataset.id;
+                const productName = this.closest('.product-card').querySelector('.product-name').textContent;
+                addToCart(productId, productName);
             });
         });
     }
 
-    function addToCart(productId) {
+    function addToCart(productId, productName) {
+        console.log('Adicionando ao carrinho:', productId, productName);
+
         fetch('/api/cart', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ product_id: productId, quantity: 1 })
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                product_id: productId,
+                quantity: 1
+            })
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Cart response:', data);
             if (data.success) {
-                showToast('Produto adicionado ao carrinho!');
+                showToast(`${productName} adicionado ao carrinho!`);
                 updateCartBadge();
+            } else {
+                showToast(data.error || 'Erro ao adicionar');
             }
         })
-        .catch(err => console.error('Error adding to cart:', err));
+        .catch(err => {
+            console.error('Error adding to cart:', err);
+            showToast('Erro ao adicionar produto');
+        });
     }
 
     function showToast(message, type = 'success') {
