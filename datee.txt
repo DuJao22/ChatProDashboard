@@ -1,0 +1,11 @@
+o sqlitecloud esta configurado ?
+sqlitecloud://cmq6frwshz.g4.sqlite.cloud:8860/database.db?apikey=Dor8OwUECYmrbcS5vWfsdGpjCpdm9ecSDJtywgvRw8k
+deixe no codigo fonte 
+
+queroque remova a ia ,pq sera feito o cadastro no caht da seginte forma .
+
+o chat recepciona o cleinte commemsagem de boas vindas.
+pergunta onnumero de telefone .
+verifica se ja tem cadastrado , caso nao tenha ele pergunta o nome ,cep ,numero da casa e vese tem complemento .e mostra ocard comprodutos .
+e caso o cleinte ja tenha cadastro pelo numero ochat salda pelo nome , e confirma se sera a entrega naqueleendereco 
+caso confirme  envie o card com produtos 
