@@ -18,8 +18,19 @@ let salesChart, ordersStatusChart, topProductsChart;
 
 function loadDashboardData() {
     fetch('/api/admin/dashboard')
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 401 || response.status === 403) {
+                console.error('Authentication failed, redirecting to login...');
+                window.location.href = '/admin/login';
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            if (!data) return;
             document.getElementById('totalOrders').textContent = data.total_orders;
             document.getElementById('totalRevenue').textContent = formatCurrency(data.total_revenue);
             document.getElementById('totalCustomers').textContent = data.total_customers;

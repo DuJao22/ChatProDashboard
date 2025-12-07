@@ -301,10 +301,17 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
+            print(f"❌ Admin auth failed: No user_id in session")
+            if request.is_json or request.path.startswith('/api/'):
+                return jsonify({'error': 'Not authenticated', 'redirect': '/admin/login'}), 401
             return redirect(url_for('admin_login'))
         user = query_db('SELECT * FROM users WHERE id = ?', [session['user_id']], one=True)
         if not user or not user['is_admin']:
+            print(f"❌ Admin auth failed: User not found or not admin")
+            if request.is_json or request.path.startswith('/api/'):
+                return jsonify({'error': 'Not authorized', 'redirect': '/admin/login'}), 403
             return redirect(url_for('admin_login'))
+        print(f"✅ Admin authenticated: {user['username']}")
         return f(*args, **kwargs)
     return decorated_function
 
@@ -1490,6 +1497,25 @@ def process_without_ai(content_lower, session_id=None, conv_data=None):
             if matched_product['stock'] < quantity:
                 return f"Tenho só {matched_product['stock']} unidades de {matched_product['name']} no momento. Quer essa quantidade?"
 
+
+
+@app.route('/api/admin/check-auth')
+def check_admin_auth():
+    """Endpoint público para verificar autenticação do admin"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'authenticated': False, 'message': 'No session'})
+    
+    user = query_db('SELECT id, username, is_admin FROM users WHERE id = ?', [user_id], one=True)
+    if not user:
+        return jsonify({'authenticated': False, 'message': 'User not found'})
+    
+    return jsonify({
+        'authenticated': True,
+        'is_admin': bool(user['is_admin']),
+        'username': user['username']
+    })
+
             # Criar pedido pendente automaticamente
             total = float(matched_product['price']) * quantity
 
@@ -1669,8 +1695,10 @@ def admin_categories_api():
 @admin_required
 def admin_dashboard_api():
     """API principal do dashboard com estatísticas gerais"""
+    print(f"📊 Loading dashboard data...")
     # Total de pedidos
     total_orders = query_db('SELECT COUNT(*) as count FROM orders', one=True)
+    print(f"📊 Total orders: {total_orders['count'] if total_orders else 0}")
     
     # Receita total (excluindo cancelados)
     total_revenue = query_db('SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE status != "cancelled"', one=True)

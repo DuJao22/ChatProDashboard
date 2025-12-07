@@ -1,7 +1,5 @@
-from app import app, socketio, init_db, start_ping_thread
 
-init_db()
-start_ping_thread()
+from app import app, socketio
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
