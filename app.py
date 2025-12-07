@@ -2150,10 +2150,10 @@ def process_chat_message(session_id, content, conv_data):
     # Confirmando registro de cliente existente
     if state == 'confirming_registration':
         if any(word in content_lower for word in ['sim', 's', 'yes', 'sou', 'eu', 'isso', 'certo']):
-            # Dados confirmados - perguntar como quer continuar
-            active_conversations[session_id]['state'] = 'choosing_order_method'
+            # Dados confirmados - mostrar produtos diretamente
+            active_conversations[session_id]['state'] = 'browsing_products'
             first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
-            return f"Perfeito, {first_name}! Login feito! ✅\n\nComo você quer fazer seu pedido?\n\n1️⃣ Continuar aqui no chat\n2️⃣ Ir para a loja online\n\nDigite 1 ou 2"
+            return f"[SHOW_PRODUCTS]Perfeito, {first_name}! Veja nossos produtos abaixo:"
         elif any(word in content_lower for word in ['não', 'nao', 'n', 'no', 'errado', 'outro']):
             # Dados incorretos - pedir telefone novamente
             active_conversations[session_id]['state'] = 'awaiting_phone_first'
