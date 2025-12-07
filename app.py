@@ -1,4 +1,3 @@
-replit_final_file>
 # IMPORTANTE: eventlet.monkey_patch() DEVE ser a primeira coisa executada
 import eventlet
 eventlet.monkey_patch()
