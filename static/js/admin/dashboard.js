@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     loadDashboardData();
     loadNewOrders();
-    
+
     // Atualizar novos pedidos a cada 30 segundos
     setInterval(loadNewOrders, 30000);
-    
+
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -37,30 +37,32 @@ function loadDashboardData() {
             document.getElementById('pendingOrders').textContent = data.pending_orders;
             document.getElementById('abandonedCarts').textContent = data.abandoned_carts;
             document.getElementById('totalProducts').textContent = data.total_products;
-            
+
             const pendingBadge = document.getElementById('pendingBadge');
             if (data.pending_orders > 0) {
                 pendingBadge.style.display = 'inline';
             } else {
                 pendingBadge.style.display = 'none';
             }
-            
+
             renderSalesChart(data.sales_by_day);
             renderOrdersStatusChart(data.orders_by_status);
             renderTopProductsChart(data.top_products);
             renderRecentOrders(data.recent_orders);
+            // Carregar atividade do chat
+            loadChatActivity();
         })
         .catch(err => console.error('Error loading dashboard:', err));
 }
 
 function renderSalesChart(salesData) {
     const ctx = document.getElementById('salesChart').getContext('2d');
-    
+
     const labels = salesData.map(s => formatDateShort(s.date)).reverse();
     const values = salesData.map(s => s.total).reverse();
-    
+
     if (salesChart) salesChart.destroy();
-    
+
     salesChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -107,7 +109,7 @@ function renderSalesChart(salesData) {
 
 function renderOrdersStatusChart(statusData) {
     const ctx = document.getElementById('ordersStatusChart').getContext('2d');
-    
+
     const colors = {
         'pending': '#f59e0b',
         'confirmed': '#3b82f6',
@@ -116,13 +118,13 @@ function renderOrdersStatusChart(statusData) {
         'delivered': '#10b981',
         'cancelled': '#ef4444'
     };
-    
+
     const labels = statusData.map(s => getStatusLabel(s.status));
     const values = statusData.map(s => s.count);
     const bgColors = statusData.map(s => colors[s.status] || '#999');
-    
+
     if (ordersStatusChart) ordersStatusChart.destroy();
-    
+
     ordersStatusChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -148,12 +150,12 @@ function renderOrdersStatusChart(statusData) {
 
 function renderTopProductsChart(productsData) {
     const ctx = document.getElementById('topProductsChart').getContext('2d');
-    
+
     const labels = productsData.map(p => p.name.substring(0, 15) + (p.name.length > 15 ? '...' : ''));
     const values = productsData.map(p => p.total_sold);
-    
+
     if (topProductsChart) topProductsChart.destroy();
-    
+
     topProductsChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -184,7 +186,7 @@ function loadNewOrders() {
         .then(response => response.json())
         .then(orders => {
             const newOrdersList = document.getElementById('newOrdersList');
-            
+
             if (orders.length === 0) {
                 newOrdersList.innerHTML = `
                     <div style="text-align: center; padding: 20px; opacity: 0.8;">
@@ -194,7 +196,7 @@ function loadNewOrders() {
                 `;
                 return;
             }
-            
+
             newOrdersList.innerHTML = orders.map(order => `
                 <div class="new-order-item" onclick="window.location.href='/admin/pedidos'">
                     <div class="new-order-header">
@@ -217,19 +219,19 @@ function getTimeAgo(dateString) {
     const date = new Date(dateString);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / 60000);
-    
+
     if (diffInMinutes < 1) return 'Agora';
     if (diffInMinutes < 60) return `${diffInMinutes}min atrás`;
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours}h atrás`;
-    
+
     return formatDateShort(dateString);
 }
 
 function renderRecentOrders(orders) {
     const tbody = document.getElementById('recentOrdersTable');
-    
+
     tbody.innerHTML = orders.map(order => `
         <tr>
             <td>#${order.id}</td>
@@ -239,4 +241,62 @@ function renderRecentOrders(orders) {
             <td>${formatDateShort(order.created_at)}</td>
         </tr>
     `).join('');
+}
+
+function loadChatActivity() {
+    fetch('/api/admin/conversations')
+        .then(response => {
+            if (!response.ok) {
+                // Assuming 401 or 403 might redirect to login, similar to dashboard
+                if (response.status === 401 || response.status === 403) {
+                    console.error('Authentication failed for chat, redirecting to login...');
+                    window.location.href = '/admin/login';
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(conversations => {
+            const chatActivityContainer = document.getElementById('chatActivityList');
+            if (!chatActivityContainer) return;
+
+            // Pegar as 5 conversas mais recentes
+            const recentConversations = conversations.slice(0, 5);
+
+            if (recentConversations.length === 0) {
+                chatActivityContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Nenhuma conversa recente</div>';
+                return;
+            }
+
+            const chatHtml = recentConversations.map(conv => {
+                const customerName = conv.customer_name || 'Visitante';
+                const messageCount = conv.message_count || 0;
+                const lastUpdate = formatDate(conv.updated_at);
+
+                return `
+                    <div class="chat-activity-item">
+                        <div class="chat-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="chat-info">
+                            <h4>${customerName}</h4>
+                            <p>${messageCount} mensagens</p>
+                        </div>
+                        <div class="chat-time">
+                            <span>${lastUpdate}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            chatActivityContainer.innerHTML = chatHtml;
+        })
+        .catch(err => {
+            console.error('Erro ao carregar atividade do chat:', err);
+            const chatActivityContainer = document.getElementById('chatActivityList');
+            if (chatActivityContainer) {
+                chatActivityContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Erro ao carregar conversas</div>';
+            }
+        });
 }

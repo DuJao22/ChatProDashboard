@@ -1860,6 +1860,63 @@ td {
     color: white;
 }
 
+.chat-activity-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    transition: background 0.2s;
+}
+
+.chat-activity-item:hover {
+    background: #f8f9fa;
+}
+
+.chat-activity-item:last-child {
+    border-bottom: none;
+}
+
+.chat-avatar {
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.chat-info {
+    flex: 1;
+}
+
+.chat-info h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 4px 0;
+}
+
+.chat-info p {
+    font-size: 13px;
+    color: #999;
+    margin: 0;
+}
+
+.chat-time {
+    font-size: 12px;
+    color: #999;
+}
+
+#chatActivityList {
+    min-height: 100px;
+}
+}
+
 .report-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
