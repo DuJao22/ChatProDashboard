@@ -844,10 +844,10 @@ def save_store_settings():
             conn.execute('''
                 UPDATE store_settings SET
                     store_name = ?,
-                    store_phone = ?,
-                    store_email = ?,
-                    store_address = ?,
-                    store_cep = ?,
+                    whatsapp = ?,
+                    email = ?,
+                    address = ?,
+                    cep = ?,
                     delivery_radius_km = ?,
                     delivery_fee = ?,
                     min_order_value = ?
@@ -866,8 +866,8 @@ def save_store_settings():
             # Inserir
             conn.execute('''
                 INSERT INTO store_settings (
-                    id, store_name, store_phone, store_email, 
-                    store_address, store_cep, delivery_radius_km,
+                    id, store_name, whatsapp, email, 
+                    address, cep, delivery_radius_km,
                     delivery_fee, min_order_value
                 ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
@@ -901,13 +901,13 @@ def check_delivery_radius():
 
         # Obter configurações da loja
         conn = get_db_connection()
-        settings = conn.execute('SELECT store_cep, delivery_radius_km FROM store_settings WHERE id = 1').fetchone()
+        settings = conn.execute('SELECT cep, delivery_radius_km FROM store_settings WHERE id = 1').fetchone()
         conn.close()
 
-        if not settings or not settings['store_cep']:
+        if not settings or not settings['cep']:
             return jsonify({'success': True, 'delivers': True, 'message': 'Raio de entrega não configurado'})
 
-        store_cep = settings['store_cep'].replace('-', '').replace('.', '')
+        store_cep = settings['cep'].replace('-', '').replace('.', '')
         radius_km = float(settings['delivery_radius_km'] or 10)
 
         # Calcular distância usando API ViaCEP + geolocalização simples
