@@ -1622,106 +1622,106 @@ def api_cart():
             session_id = session['session_id']
         
         if request.method == 'GET':
-        # Listar itens do carrinho
-        if customer_id:
-            items = query_db('''
-                SELECT ci.*, p.name, p.price, p.image_url, p.stock
-                FROM cart_items ci
-                JOIN products p ON ci.product_id = p.id
-                WHERE ci.customer_id = ?
-            ''', [customer_id])
-        else:
-            items = query_db('''
-                SELECT ci.*, p.name, p.price, p.image_url, p.stock
-                FROM cart_items ci
-                JOIN products p ON ci.product_id = p.id
-                WHERE ci.session_id = ?
-            ''', [session_id])
+            # Listar itens do carrinho
+            if customer_id:
+                items = query_db('''
+                    SELECT ci.*, p.name, p.price, p.image_url, p.stock
+                    FROM cart_items ci
+                    JOIN products p ON ci.product_id = p.id
+                    WHERE ci.customer_id = ?
+                ''', [customer_id])
+            else:
+                items = query_db('''
+                    SELECT ci.*, p.name, p.price, p.image_url, p.stock
+                    FROM cart_items ci
+                    JOIN products p ON ci.product_id = p.id
+                    WHERE ci.session_id = ?
+                ''', [session_id])
+            
+            return jsonify([dict(item) for item in items])
         
-        return jsonify([dict(item) for item in items])
-    
-    elif request.method == 'POST':
-        # Adicionar item ao carrinho
-        data = request.get_json()
-        product_id = data.get('product_id')
-        quantity = data.get('quantity', 1)
+        elif request.method == 'POST':
+            # Adicionar item ao carrinho
+            data = request.get_json()
+            product_id = data.get('product_id')
+            quantity = data.get('quantity', 1)
+            
+            if not product_id:
+                return jsonify({'success': False, 'error': 'Product ID required'}), 400
+            
+            # Verificar se produto existe e está ativo
+            product = query_db('SELECT * FROM products WHERE id = ? AND active = 1', [product_id], one=True)
+            if not product:
+                return jsonify({'success': False, 'error': 'Produto não encontrado'}), 404
+            
+            # Verificar estoque
+            if product['stock'] < quantity:
+                return jsonify({'success': False, 'error': 'Estoque insuficiente'}), 400
+            
+            # Verificar se já existe no carrinho
+            if customer_id:
+                existing = query_db('SELECT * FROM cart_items WHERE customer_id = ? AND product_id = ?', 
+                                  [customer_id, product_id], one=True)
+            else:
+                existing = query_db('SELECT * FROM cart_items WHERE session_id = ? AND product_id = ?', 
+                                  [session_id, product_id], one=True)
+            
+            if existing:
+                # Atualizar quantidade
+                new_quantity = existing['quantity'] + quantity
+                if product['stock'] < new_quantity:
+                    return jsonify({'success': False, 'error': 'Estoque insuficiente'}), 400
+                
+                update_db('UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ?',
+                         [new_quantity, brasilia_now(), existing['id']])
+            else:
+                # Inserir novo item
+                if customer_id:
+                    insert_db('''
+                        INSERT INTO cart_items (customer_id, product_id, quantity, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', [customer_id, product_id, quantity, brasilia_now(), brasilia_now()])
+                else:
+                    insert_db('''
+                        INSERT INTO cart_items (session_id, product_id, quantity, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', [session_id, product_id, quantity, brasilia_now(), brasilia_now()])
+            
+            return jsonify({'success': True})
         
-        if not product_id:
-            return jsonify({'success': False, 'error': 'Product ID required'}), 400
-        
-        # Verificar se produto existe e está ativo
-        product = query_db('SELECT * FROM products WHERE id = ? AND active = 1', [product_id], one=True)
-        if not product:
-            return jsonify({'success': False, 'error': 'Produto não encontrado'}), 404
-        
-        # Verificar estoque
-        if product['stock'] < quantity:
-            return jsonify({'success': False, 'error': 'Estoque insuficiente'}), 400
-        
-        # Verificar se já existe no carrinho
-        if customer_id:
-            existing = query_db('SELECT * FROM cart_items WHERE customer_id = ? AND product_id = ?', 
-                              [customer_id, product_id], one=True)
-        else:
-            existing = query_db('SELECT * FROM cart_items WHERE session_id = ? AND product_id = ?', 
-                              [session_id, product_id], one=True)
-        
-        if existing:
+        elif request.method == 'PUT':
             # Atualizar quantidade
-            new_quantity = existing['quantity'] + quantity
-            if product['stock'] < new_quantity:
+            data = request.get_json()
+            item_id = data.get('item_id')
+            quantity = data.get('quantity', 1)
+            
+            if quantity < 1:
+                return jsonify({'success': False, 'error': 'Quantidade inválida'}), 400
+            
+            # Verificar estoque
+            item = query_db('SELECT * FROM cart_items WHERE id = ?', [item_id], one=True)
+            if not item:
+                return jsonify({'success': False, 'error': 'Item não encontrado'}), 404
+            
+            product = query_db('SELECT * FROM products WHERE id = ?', [item['product_id']], one=True)
+            if product['stock'] < quantity:
                 return jsonify({'success': False, 'error': 'Estoque insuficiente'}), 400
             
             update_db('UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ?',
-                     [new_quantity, brasilia_now(), existing['id']])
-        else:
-            # Inserir novo item
+                     [quantity, brasilia_now(), item_id])
+            
+            return jsonify({'success': True})
+        
+        elif request.method == 'DELETE':
+            # Remover item
+            item_id = request.args.get('item_id')
+            
             if customer_id:
-                insert_db('''
-                    INSERT INTO cart_items (customer_id, product_id, quantity, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', [customer_id, product_id, quantity, brasilia_now(), brasilia_now()])
+                update_db('DELETE FROM cart_items WHERE id = ? AND customer_id = ?', [item_id, customer_id])
             else:
-                insert_db('''
-                    INSERT INTO cart_items (session_id, product_id, quantity, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', [session_id, product_id, quantity, brasilia_now(), brasilia_now()])
-        
-        return jsonify({'success': True})
-    
-    elif request.method == 'PUT':
-        # Atualizar quantidade
-        data = request.get_json()
-        item_id = data.get('item_id')
-        quantity = data.get('quantity', 1)
-        
-        if quantity < 1:
-            return jsonify({'success': False, 'error': 'Quantidade inválida'}), 400
-        
-        # Verificar estoque
-        item = query_db('SELECT * FROM cart_items WHERE id = ?', [item_id], one=True)
-        if not item:
-            return jsonify({'success': False, 'error': 'Item não encontrado'}), 404
-        
-        product = query_db('SELECT * FROM products WHERE id = ?', [item['product_id']], one=True)
-        if product['stock'] < quantity:
-            return jsonify({'success': False, 'error': 'Estoque insuficiente'}), 400
-        
-        update_db('UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ?',
-                 [quantity, brasilia_now(), item_id])
-        
-        return jsonify({'success': True})
-    
-    elif request.method == 'DELETE':
-        # Remover item
-        item_id = request.args.get('item_id')
-        
-        if customer_id:
-            update_db('DELETE FROM cart_items WHERE id = ? AND customer_id = ?', [item_id, customer_id])
-        else:
-            update_db('DELETE FROM cart_items WHERE id = ? AND session_id = ?', [item_id, session_id])
-        
-        return jsonify({'success': True})
+                update_db('DELETE FROM cart_items WHERE id = ? AND session_id = ?', [item_id, session_id])
+            
+            return jsonify({'success': True})
     
     except Exception as e:
         print(f"❌ Erro na API do carrinho: {e}")
