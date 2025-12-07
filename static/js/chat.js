@@ -40,6 +40,13 @@ document.addEventListener('DOMContentLoaded', function() {
         hideTyping();
         addMessage(data.sender, data.content, data.timestamp, false);
         scrollToBottom();
+        
+        // Verificar se deve mostrar produtos após adicionar a mensagem
+        if (data.sender === 'bot' && data.content.includes('[SHOW_PRODUCTS]')) {
+            setTimeout(() => {
+                loadAndShowProducts();
+            }, 500);
+        }
     });
 
     // Prevenir múltiplas conexões
@@ -74,21 +81,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (content.includes('[SHOW_PRODUCTS]')) {
-                displayContent = content.replace('[SHOW_PRODUCTS]', '');
+                displayContent = content.replace('[SHOW_PRODUCTS]', '').trim();
                 if (!isHistorical) {
                     shouldShowProducts = true;
                 }
             }
         }
         
-        messageDiv.innerHTML = `
-            <div class="message-bubble">
-                <div class="message-content">${escapeHtml(displayContent)}</div>
-                <div class="message-time">${time}</div>
-            </div>
-        `;
-        
-        messagesContainer.appendChild(messageDiv);
+        // Só adicionar mensagem se tiver conteúdo após remover as tags
+        if (displayContent) {
+            messageDiv.innerHTML = `
+                <div class="message-bubble">
+                    <div class="message-content">${escapeHtml(displayContent)}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+        }
         
         if (shouldRedirect) {
             setTimeout(() => {
@@ -99,7 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (shouldShowProducts) {
             setTimeout(() => {
                 loadAndShowProducts();
-            }, 500);
+                scrollToBottom();
+            }, 300);
         }
     }
 

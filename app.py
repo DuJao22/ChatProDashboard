@@ -1610,6 +1610,35 @@ def admin_report_customers():
         'top_customers': [dict(t) for t in top_customers]
     })
 
+@app.route('/api/chat/products')
+def chat_products():
+    """Retorna produtos para exibição no chat com filtro opcional por categoria"""
+    category = request.args.get('category', '')
+    
+    if category:
+        products = query_db('''
+            SELECT p.*, c.name as category_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.category_id = c.id 
+            WHERE p.active = 1 AND p.category_id = ?
+            ORDER BY p.name
+        ''', [category])
+    else:
+        products = query_db('''
+            SELECT p.*, c.name as category_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.category_id = c.id 
+            WHERE p.active = 1
+            ORDER BY p.name
+        ''')
+    
+    categories = query_db('SELECT * FROM categories WHERE active = 1 ORDER BY name')
+    
+    return jsonify({
+        'products': [dict(p) for p in products],
+        'categories': [dict(c) for c in categories]
+    })
+
 @app.route('/api/admin/reports/abandoned-carts')
 @admin_required
 def admin_report_abandoned_carts():
