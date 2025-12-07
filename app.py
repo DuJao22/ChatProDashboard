@@ -3005,4 +3005,3 @@ if __name__ == '__main__':
     start_ping_thread()
     print("🚀 Servidor iniciando com SQLite Cloud...")
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
-</replit_final_file>
