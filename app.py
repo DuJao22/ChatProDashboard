@@ -391,7 +391,7 @@ def customer_login():
 @app.route('/api/customer/register', methods=['POST'])
 def customer_register():
     data = request.get_json()
-    
+
     phone = data.get('phone', '').replace('-', '').replace('(', '').replace(')', '').replace(' ', '').strip()
     name = data.get('name', '').strip()
     cep = data.get('cep', '').replace('-', '').strip()
@@ -401,24 +401,24 @@ def customer_register():
     neighborhood = data.get('neighborhood', '').strip()
     city = data.get('city', '').strip()
     state = data.get('state', '').strip()
-    
+
     if not phone or len(phone) < 10:
         return jsonify({'success': False, 'error': 'Telefone inválido'})
-    
+
     name_parts = name.split()
     if len(name_parts) < 2:
         return jsonify({'success': False, 'error': 'Digite seu nome completo (nome e sobrenome)'})
-    
+
     if not cep or len(cep) != 8:
         return jsonify({'success': False, 'error': 'CEP inválido'})
-    
+
     if not number:
         return jsonify({'success': False, 'error': 'Número é obrigatório'})
-    
+
     existing = query_db('SELECT * FROM customers WHERE phone = ?', [phone], one=True)
     if existing:
         return jsonify({'success': False, 'error': 'Este telefone já está cadastrado. Faça login.'})
-    
+
     try:
         customer_id = insert_db('''
             INSERT INTO customers (name, phone, cep, address, number, complement, neighborhood, city, state, created_at)
@@ -435,18 +435,18 @@ def customer_register():
             state,
             brasilia_now()
         ])
-        
+
         old_session_id = session.get('session_id')
-        
+
         session.clear()
         session['customer_id'] = customer_id
         session['customer_name'] = name.title()
         session['session_id'] = old_session_id or generate_token()
         session.permanent = True
         session.modified = True
-        
+
         print(f"✅ Cadastro realizado: {name.title()} (ID: {customer_id})")
-        
+
         if old_session_id:
             anonymous_cart_items = query_db('''
                 SELECT * FROM cart_items 
@@ -472,13 +472,13 @@ def customer_register():
                     ''', [customer_id, item['product_id'], item['quantity'], brasilia_now(), brasilia_now()])
 
             update_db('DELETE FROM cart_items WHERE session_id = ?', [old_session_id])
-        
+
         return jsonify({
             'success': True,
             'customer_name': name.title(),
             'redirect': url_for('loja')
         })
-        
+
     except Exception as e:
         print(f"Erro ao cadastrar cliente: {e}")
         return jsonify({'success': False, 'error': 'Erro ao cadastrar. Tente novamente.'})
@@ -1947,13 +1947,10 @@ def handle_connect(auth=None):
         emit('load_messages', [serialize_message(m) for m in messages])
     else:
         if customer:
-            last_orders = get_customer_last_orders(customer['id'])
-            orders_text = format_orders_for_chat(last_orders) if last_orders else ""
-
             first_name = customer['name'].split()[0] if customer['name'] else 'amigo'
-            welcome_msg = f"Oi, {first_name}! Tudo bem? 😊\n\nEm que posso te ajudar hoje?{orders_text}"
+            welcome_msg = f"Olá, {first_name}! 😊\n\nBem-vindo à Ariguá Distribuidora!\n\nEm que posso te ajudar hoje?"
         else:
-            welcome_msg = "Oi! Tudo bem? 😊\n\nEu sou a Ana, da Ariguá Distribuidora!\n\nPra eu te identificar, me passa seu telefone com DDD.\n\nExemplo: 31 99999-9999"
+            welcome_msg = "Olá! 😊\n\nBem-vindo à Ariguá Distribuidora!\n\nPara começar, me informe seu telefone com DDD.\n\nExemplo: 31 99999-9999"
 
         msg_id = insert_db('INSERT INTO messages (conversation_id, sender, content, created_at) VALUES (?, ?, ?, ?)',
                           [conv_id, 'bot', welcome_msg, brasilia_now()])
@@ -2050,24 +2047,24 @@ def handle_message(data):
     # Verificar se é uma confirmação de pedido (usuário respondeu "sim")
     # Só marcar se for uma resposta curta E o estado atual for relacionado a pedido
     current_state = active_conversations.get(session_id, {}).get('state', '')
-    
+
     # Limpar pontuação e normalizar palavras
     clean_content = re.sub(r'[^\w\s]', '', content_lower)
     words = clean_content.split()
-    
+
     # Lista de palavras de confirmação
     confirmation_words = ['sim', 's', 'confirma', 'confirmo', 'ok', 'isso', 'yes', 'claro', 'perfeito']
-    
+
     # Verificar se é confirmação curta (até 4 palavras para cobrir "pode ser", "tudo certo")
     is_short_confirmation = len(words) <= 4 and (
         any(word in words for word in confirmation_words) or
         'pode ser' in content_lower or
         'tudo certo' in content_lower
     )
-    
+
     # Estados que podem receber confirmação de pedido
     order_related_states = ['awaiting_order_confirmation', 'registered', 'awaiting_payment_method']
-    
+
     if is_short_confirmation and current_state in order_related_states:
         # Marcar que está aguardando confirmação de pedido
         active_conversations[session_id]['state'] = 'awaiting_order_confirmation'
@@ -2246,25 +2243,30 @@ def process_chat_message(session_id, content, conv_data):
             update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
                      [customer_id, conv_id])
 
-            # LOGIN FEITO (cadastro novo completo) - ir direto para escolha de método
-            active_conversations[session_id]['state'] = 'choosing_order_method'
+            # LOGIN FEITO (cadastro novo completo) - ir direto para produtos
+            active_conversations[session_id]['state'] = 'browsing_products'
             first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
-            return f"Pronto, {first_name}! Cadastro feito! 🎉\n\nComo quer fazer seu pedido?\n\n1️⃣ Continuar aqui no chat\n2️⃣ Ir para a loja online\n\nDigite 1 ou 2"
+            return f"[SHOW_PRODUCTS]Pronto, {first_name}! Cadastro feito! 🎉\n\nVeja nossos produtos abaixo. Clique no botão *+* para adicionar ao carrinho!"
 
         except Exception as e:
             error_msg = str(e).lower()
             if 'unique constraint' in error_msg or 'duplicate' in error_msg.lower():
+                # Telefone duplicado - tentar recuperar cliente existente
                 existing = query_db('SELECT * FROM customers WHERE phone = ?', 
                                    [user_data.get('phone', '')], one=True)
                 if existing:
                     session['customer_id'] = existing['id']
-                    session.permanent = True
+                    session.permanent = True # Manter sessão ativa
                     active_conversations[session_id]['data']['customer_id'] = existing['id']
                     active_conversations[session_id]['state'] = 'choosing_order_method'
                     update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
                              [existing['id'], conv_id])
                     first_name = existing['name'].split()[0] if existing['name'] else 'amigo'
                     return f"Oi, {first_name}! Você já estava cadastrado!\n\nComo quer continuar?\n\n1️⃣ Continuar aqui no chat\n2️⃣ Ir para a loja online\n\nDigite 1 ou 2"
+                else:
+                    active_conversations[session_id]['state'] = 'awaiting_name'
+                    active_conversations[session_id]['data'] = {}
+                    return "Esse telefone já está cadastrado!\n\nQuer usar outro número?"
 
             print(f"Erro ao salvar cliente: {e}")
             active_conversations[session_id]['state'] = 'awaiting_phone_first'
@@ -2275,7 +2277,7 @@ def process_chat_message(session_id, content, conv_data):
 
     # VERIFICAR se está aguardando confirmação de pedido
     if state == 'awaiting_order_confirmation':
-        if any(word in content_lower for word in ['sim', 'confirma', 'confirmo', 'ok', 'tudo certo', 'pode ser', 's', 'isso', 'yes', 'é isso', 'claro', 'perfeito']):
+        if any(word in content_lower for word in ['sim', 'confirma', 'confirmo', 'ok', 'tudo certo', 'pode ser', 's', 'isso']):
             # Cliente confirmou o pedido, criar no banco
             order_items_details = user_data.get('pending_order_items', [])
             total = user_data.get('pending_order_total', 0)
@@ -2774,65 +2776,42 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
 Precisa de algo mais? Estou aqui para ajudar! 😊"""
             return delivery_msg
 
-    # Coletando complemento e finalizando cadastro
-    if state == 'awaiting_complement':
+    # Coletando complemento e finalizando cadastro (continuação de 'awaiting_complement_new')
+    if state == 'awaiting_complement_new':
         complement = ''
         if not any(word in content_lower for word in ['não', 'nao', 'sem']):
             complement = content.strip()
 
         active_conversations[session_id]['data']['complement'] = complement
 
-        # Verifica se é atualização ou novo cadastro
-        customer_id = user_data.get('customer_id')
-
         try:
-            if customer_id:
-                # Atualizar cliente existente
-                update_db('''
-                    UPDATE customers 
-                    SET cep = ?, address = ?, number = ?, complement = ?, 
-                        neighborhood = ?, city = ?, state = ?, updated_at = ?
-                    WHERE id = ?
-                ''', [
-                    user_data.get('cep', ''),
-                    user_data.get('logradouro', ''),
-                    user_data.get('number', ''),
-                    complement,
-                    user_data.get('bairro', ''),
-                    user_data.get('cidade', ''),
-                    user_data.get('estado', ''),
-                    brasilia_now(),
-                    customer_id
-                ])
+            # Inserir novo cliente
+            customer_id = insert_db('''
+                INSERT INTO customers (name, phone, cep, address, number, complement, neighborhood, city, state, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', [
+                user_data.get('name', ''),
+                user_data.get('phone', ''),
+                user_data.get('cep', ''),
+                user_data.get('logradouro', ''),
+                user_data.get('number', ''),
+                complement,
+                user_data.get('bairro', ''),
+                user_data.get('cidade', ''),
+                user_data.get('estado', ''),
+                brasilia_now()
+            ])
 
-                active_conversations[session_id]['state'] = 'choosing_order_method'
-                return "Pronto! Endereço atualizado!\n\nComo quer fazer seu pedido?\n\n1 - Aqui pelo chat\n2 - Na loja online\n\nMe diz: 1 ou 2"
-            else:
-                # Inserir novo cliente
-                customer_id = insert_db('''
-                    INSERT INTO customers (name, phone, cep, address, number, complement, neighborhood, city, state, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [
-                    user_data.get('name', ''),
-                    user_data.get('phone', ''),
-                    user_data.get('cep', ''),
-                    user_data.get('logradouro', ''),
-                    user_data.get('number', ''),
-                    complement,
-                    user_data.get('bairro', ''),
-                    user_data.get('cidade', ''),
-                    user_data.get('estado', ''),
-                    brasilia_now()
-                ])
+            session['customer_id'] = customer_id
+            session.permanent = True
+            active_conversations[session_id]['data']['customer_id'] = customer_id
+            update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
+                     [customer_id, conv_id])
 
-                session['customer_id'] = customer_id
-                session.permanent = True # Manter sessão ativa
-                update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
-                         [customer_id, conv_data.get('conversation_id')])
-
-                active_conversations[session_id]['state'] = 'choosing_order_method'
-                first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
-                return f"Pronto, {first_name}! Cadastro feito! 🎉\n\nComo quer fazer seu pedido?\n\n1 - Aqui pelo chat\n2 - Na loja online\n\nMe diz: 1 ou 2"
+            # LOGIN FEITO (cadastro novo completo) - ir direto para produtos
+            active_conversations[session_id]['state'] = 'browsing_products'
+            first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
+            return f"[SHOW_PRODUCTS]Pronto, {first_name}! Cadastro feito! 🎉\n\nVeja nossos produtos abaixo. Clique no botão *+* para adicionar ao carrinho!"
 
         except Exception as e:
             error_msg = str(e)
@@ -2844,11 +2823,11 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
                     session['customer_id'] = existing['id']
                     session.permanent = True # Manter sessão ativa
                     active_conversations[session_id]['data']['customer_id'] = existing['id']
-                    active_conversations[session_id]['state'] = 'registered'
+                    active_conversations[session_id]['state'] = 'choosing_order_method'
                     update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
-                             [existing['id'], conv_data.get('conversation_id')])
+                             [existing['id'], conv_id])
                     first_name = existing['name'].split()[0] if existing['name'] else 'amigo'
-                    return f"Oi, {first_name}! Que bom te ver de novo!\n\nO que você precisa hoje?"
+                    return f"Oi, {first_name}! Você já estava cadastrado!\n\nComo quer continuar?\n\n1️⃣ Continuar aqui no chat\n2️⃣ Ir para a loja online\n\nDigite 1 ou 2"
                 else:
                     active_conversations[session_id]['state'] = 'awaiting_name'
                     active_conversations[session_id]['data'] = {}
@@ -2857,7 +2836,7 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
             print(f"Erro ao salvar cliente: {e}")
             active_conversations[session_id]['state'] = 'awaiting_phone_first'
             active_conversations[session_id]['data'] = {}
-            return "😅 Opa, tive um probleminha! Vamos tentar de novo?\n\nMe passa seu telefone com DDD:"
+            return "Ops, deu um erro! Vamos recomeçar.\n\nMe passa seu telefone com DDD:"
 
     # Coletando CEP
     if state == 'awaiting_cep':
@@ -2978,13 +2957,13 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
             update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
                      [customer_id, conv_id])
 
-            # LOGIN FEITO (cadastro novo completo) - ir direto para escolha de método
-            active_conversations[session_id]['state'] = 'choosing_order_method'
+            # LOGIN FEITO (cadastro novo completo) - ir direto para produtos
+            active_conversations[session_id]['state'] = 'browsing_products'
             first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
-            return f"Pronto, {first_name}! Cadastro feito! 🎉\n\nComo quer fazer seu pedido?\n\n1️⃣ Continuar aqui no chat\n2️⃣ Ir para a loja online\n\nDigite 1 ou 2"
+            return f"[SHOW_PRODUCTS]Pronto, {first_name}! Cadastro feito! 🎉\n\nVeja nossos produtos abaixo. Clique no botão *+* para adicionar ao carrinho!"
 
         except Exception as e:
-            error_msg = str(e).lower()
+            error_msg = str(e)
             if 'unique constraint' in error_msg or 'duplicate' in error_msg.lower():
                 # Telefone duplicado - tentar recuperar cliente existente
                 existing = query_db('SELECT * FROM customers WHERE phone = ?', 
@@ -3015,7 +2994,7 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
             return "[SHOW_PRODUCTS]Ótimo! Para comprar, use os cards abaixo e clique no '+' para adicionar ao carrinho. Quando terminar, clique em 'Finalizar Pedido'!"
         elif any(word in content_lower for word in ['2', 'site', 'loja', 'virtual']):
             active_conversations[session_id]['state'] = 'registered'
-            return "Perfeito! Clique no botão da Loja aí embaixo! [redirect:loja]"
+            return "Perfeito! Clica no botão da Loja aí embaixo! [redirect:loja]"
         else:
             return f"✅ Login realizado!\n\nComo você quer continuar?\n\n1️⃣ Continuar no chat\n2️⃣ Direcionar pro site\n\nDigite 1 ou 2"
 
