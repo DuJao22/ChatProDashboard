@@ -180,11 +180,48 @@ CREATE TABLE IF NOT EXISTS system_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabela de configurações
+-- Tabela de configurações (legado - para compatibilidade)
 CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     key TEXT UNIQUE NOT NULL,
     value TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de configurações da loja
+CREATE TABLE IF NOT EXISTS store_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    store_name TEXT DEFAULT 'Ariguá Distribuidora',
+    store_slogan TEXT DEFAULT 'Ponto D''Água',
+    logo_url TEXT,
+    phone1 TEXT DEFAULT '(31) 3044-5050',
+    phone2 TEXT,
+    phone3 TEXT,
+    phone4 TEXT,
+    whatsapp TEXT DEFAULT '(31) 99212-2844',
+    email TEXT,
+    address TEXT DEFAULT 'R. Rio Xingu, 753',
+    number TEXT DEFAULT '753',
+    neighborhood TEXT DEFAULT 'Riacho',
+    city TEXT DEFAULT 'Contagem',
+    state TEXT DEFAULT 'MG',
+    cep TEXT DEFAULT '32265-290',
+    latitude REAL,
+    longitude REAL,
+    delivery_radius_km REAL DEFAULT 10.0,
+    delivery_fee REAL DEFAULT 15.00,
+    free_delivery_min_value REAL DEFAULT 100.00,
+    min_order_value REAL DEFAULT 0,
+    opening_time_weekday TEXT DEFAULT '08:30',
+    closing_time_weekday TEXT DEFAULT '17:30',
+    opening_time_saturday TEXT DEFAULT '08:30',
+    closing_time_saturday TEXT DEFAULT '12:30',
+    open_sunday INTEGER DEFAULT 0,
+    opening_time_sunday TEXT,
+    closing_time_sunday TEXT,
+    instagram_url TEXT,
+    facebook_url TEXT,
+    about_text TEXT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

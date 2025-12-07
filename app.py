@@ -87,6 +87,57 @@ def init_db():
         except Exception as table_err:
             print(f"⚠️ Erro ao criar tabela chat_pending_orders: {table_err}")
 
+        # Criar tabela store_settings
+        try:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS store_settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    store_name TEXT DEFAULT 'Ariguá Distribuidora',
+                    store_slogan TEXT DEFAULT 'Ponto D''Água',
+                    logo_url TEXT,
+                    phone1 TEXT DEFAULT '(31) 3044-5050',
+                    phone2 TEXT,
+                    phone3 TEXT,
+                    phone4 TEXT,
+                    whatsapp TEXT DEFAULT '(31) 99212-2844',
+                    email TEXT,
+                    address TEXT DEFAULT 'R. Rio Xingu, 753',
+                    number TEXT DEFAULT '753',
+                    neighborhood TEXT DEFAULT 'Riacho',
+                    city TEXT DEFAULT 'Contagem',
+                    state TEXT DEFAULT 'MG',
+                    cep TEXT DEFAULT '32265-290',
+                    latitude REAL,
+                    longitude REAL,
+                    delivery_radius_km REAL DEFAULT 10.0,
+                    delivery_fee REAL DEFAULT 15.00,
+                    free_delivery_min_value REAL DEFAULT 100.00,
+                    min_order_value REAL DEFAULT 0,
+                    opening_time_weekday TEXT DEFAULT '08:30',
+                    closing_time_weekday TEXT DEFAULT '17:30',
+                    opening_time_saturday TEXT DEFAULT '08:30',
+                    closing_time_saturday TEXT DEFAULT '12:30',
+                    open_sunday INTEGER DEFAULT 0,
+                    opening_time_sunday TEXT,
+                    closing_time_sunday TEXT,
+                    instagram_url TEXT,
+                    facebook_url TEXT,
+                    about_text TEXT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Inserir configuração padrão se não existir
+            existing = conn.execute('SELECT id FROM store_settings LIMIT 1').fetchone()
+            if not existing:
+                conn.execute('''
+                    INSERT INTO store_settings (store_name, store_slogan, whatsapp, address, neighborhood, city, state, cep)
+                    VALUES ('Ariguá Distribuidora', 'Ponto D''Água', '(31) 99212-2844', 'R. Rio Xingu, 753', 'Riacho', 'Contagem', 'MG', '32265-290')
+                ''')
+            print("✅ Tabela store_settings verificada/criada com sucesso!")
+        except Exception as store_err:
+            print(f"⚠️ Erro ao criar tabela store_settings: {store_err}")
+
         conn.commit()
         conn.close()
         print("✅ Banco de dados SQLite Cloud inicializado com sucesso!")
@@ -132,6 +183,99 @@ def hash_password(password):
 
 def generate_token():
     return secrets.token_urlsafe(32)
+
+def get_coordinates_from_cep(cep):
+    """Obtém coordenadas aproximadas a partir do CEP usando Nominatim"""
+    try:
+        cep_clean = re.sub(r'\D', '', cep)
+        
+        # Primeiro busca o endereço via ViaCEP
+        response = requests.get(f'https://viacep.com.br/ws/{cep_clean}/json/', timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if 'erro' not in data:
+                # Monta o endereço para geocodificação
+                address = f"{data.get('logradouro', '')}, {data.get('bairro', '')}, {data.get('localidade', '')}, {data.get('uf', '')}, Brasil"
+                
+                # Usa Nominatim para geocodificação
+                geo_response = requests.get(
+                    'https://nominatim.openstreetmap.org/search',
+                    params={'q': address, 'format': 'json', 'limit': 1},
+                    headers={'User-Agent': 'AriguaDistribuidora/1.0'},
+                    timeout=5
+                )
+                
+                if geo_response.status_code == 200:
+                    geo_data = geo_response.json()
+                    if geo_data and len(geo_data) > 0:
+                        return {
+                            'lat': float(geo_data[0]['lat']),
+                            'lon': float(geo_data[0]['lon'])
+                        }
+    except Exception as e:
+        print(f"Erro ao obter coordenadas: {e}")
+    
+    return None
+
+def calculate_distance_km(lat1, lon1, lat2, lon2):
+    """Calcula distância entre duas coordenadas usando fórmula de Haversine"""
+    import math
+    
+    R = 6371  # Raio da Terra em km
+    
+    lat1_rad = math.radians(lat1)
+    lat2_rad = math.radians(lat2)
+    delta_lat = math.radians(lat2 - lat1)
+    delta_lon = math.radians(lon2 - lon1)
+    
+    a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    
+    return R * c
+
+def check_delivery_availability(customer_cep):
+    """Verifica se o CEP do cliente está dentro do raio de entrega"""
+    try:
+        # Buscar configurações da loja
+        settings = query_db('SELECT * FROM store_settings LIMIT 1', one=True)
+        if not settings:
+            return {'available': True, 'message': 'Configurações não encontradas, entrega liberada'}
+        
+        store_lat = settings['latitude']
+        store_lon = settings['longitude']
+        radius_km = settings['delivery_radius_km'] or 10.0
+        
+        # Se a loja não tem coordenadas, libera entrega
+        if not store_lat or not store_lon:
+            return {'available': True, 'message': 'Coordenadas da loja não configuradas'}
+        
+        # Obter coordenadas do cliente
+        customer_coords = get_coordinates_from_cep(customer_cep)
+        if not customer_coords:
+            return {'available': True, 'message': 'Não foi possível localizar o CEP'}
+        
+        # Calcular distância
+        distance = calculate_distance_km(
+            store_lat, store_lon,
+            customer_coords['lat'], customer_coords['lon']
+        )
+        
+        if distance <= radius_km:
+            return {
+                'available': True,
+                'distance_km': round(distance, 1),
+                'message': f'Entrega disponível ({round(distance, 1)} km)'
+            }
+        else:
+            return {
+                'available': False,
+                'distance_km': round(distance, 1),
+                'radius_km': radius_km,
+                'message': f'Fora da área de entrega. Você está a {round(distance, 1)} km e entregamos até {radius_km} km.'
+            }
+    except Exception as e:
+        print(f"Erro ao verificar entrega: {e}")
+        return {'available': True, 'message': 'Erro ao verificar, entrega liberada'}
 
 def login_required(f):
     @wraps(f)
@@ -625,6 +769,11 @@ def admin_conversas():
 def admin_relatorios():
     return render_template('admin/relatorios.html')
 
+@app.route('/admin/configuracoes')
+@admin_required
+def admin_configuracoes():
+    return render_template('admin/configuracoes.html')
+
 @app.route('/admin/logout')
 def admin_logout():
     session.clear()
@@ -1009,6 +1158,117 @@ def admin_categories():
     elif request.method == 'DELETE':
         cat_id = request.args.get('id')
         update_db('UPDATE categories SET active = 0 WHERE id = ?', [cat_id])
+        return jsonify({'success': True})
+
+@app.route('/api/admin/store-settings', methods=['GET', 'PUT'])
+@admin_required
+def admin_store_settings():
+    if request.method == 'GET':
+        settings = query_db('SELECT * FROM store_settings LIMIT 1', one=True)
+        if settings:
+            return jsonify(dict(settings))
+        return jsonify({})
+
+    elif request.method == 'PUT':
+        data = request.get_json()
+        
+        # Verificar se já existe configuração
+        existing = query_db('SELECT id FROM store_settings LIMIT 1', one=True)
+        
+        if existing:
+            update_db('''
+                UPDATE store_settings SET 
+                    store_name = ?, store_slogan = ?, logo_url = ?,
+                    phone1 = ?, phone2 = ?, phone3 = ?, phone4 = ?,
+                    whatsapp = ?, email = ?, address = ?, number = ?,
+                    neighborhood = ?, city = ?, state = ?, cep = ?,
+                    latitude = ?, longitude = ?, delivery_radius_km = ?,
+                    delivery_fee = ?, free_delivery_min_value = ?, min_order_value = ?,
+                    opening_time_weekday = ?, closing_time_weekday = ?,
+                    opening_time_saturday = ?, closing_time_saturday = ?,
+                    open_sunday = ?, opening_time_sunday = ?, closing_time_sunday = ?,
+                    instagram_url = ?, facebook_url = ?, about_text = ?,
+                    updated_at = ?
+                WHERE id = ?
+            ''', [
+                data.get('store_name', 'Ariguá Distribuidora'),
+                data.get('store_slogan', ''),
+                data.get('logo_url', ''),
+                data.get('phone1', ''),
+                data.get('phone2', ''),
+                data.get('phone3', ''),
+                data.get('phone4', ''),
+                data.get('whatsapp', ''),
+                data.get('email', ''),
+                data.get('address', ''),
+                data.get('number', ''),
+                data.get('neighborhood', ''),
+                data.get('city', ''),
+                data.get('state', ''),
+                data.get('cep', ''),
+                data.get('latitude'),
+                data.get('longitude'),
+                data.get('delivery_radius_km', 10.0),
+                data.get('delivery_fee', 15.0),
+                data.get('free_delivery_min_value', 100.0),
+                data.get('min_order_value', 0),
+                data.get('opening_time_weekday', '08:30'),
+                data.get('closing_time_weekday', '17:30'),
+                data.get('opening_time_saturday', '08:30'),
+                data.get('closing_time_saturday', '12:30'),
+                data.get('open_sunday', 0),
+                data.get('opening_time_sunday', ''),
+                data.get('closing_time_sunday', ''),
+                data.get('instagram_url', ''),
+                data.get('facebook_url', ''),
+                data.get('about_text', ''),
+                brasilia_now(),
+                existing['id']
+            ])
+        else:
+            insert_db('''
+                INSERT INTO store_settings (
+                    store_name, store_slogan, logo_url, phone1, phone2, phone3, phone4,
+                    whatsapp, email, address, number, neighborhood, city, state, cep,
+                    latitude, longitude, delivery_radius_km, delivery_fee, free_delivery_min_value,
+                    min_order_value, opening_time_weekday, closing_time_weekday,
+                    opening_time_saturday, closing_time_saturday, open_sunday,
+                    opening_time_sunday, closing_time_sunday, instagram_url, facebook_url, about_text
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', [
+                data.get('store_name', 'Ariguá Distribuidora'),
+                data.get('store_slogan', ''),
+                data.get('logo_url', ''),
+                data.get('phone1', ''),
+                data.get('phone2', ''),
+                data.get('phone3', ''),
+                data.get('phone4', ''),
+                data.get('whatsapp', ''),
+                data.get('email', ''),
+                data.get('address', ''),
+                data.get('number', ''),
+                data.get('neighborhood', ''),
+                data.get('city', ''),
+                data.get('state', ''),
+                data.get('cep', ''),
+                data.get('latitude'),
+                data.get('longitude'),
+                data.get('delivery_radius_km', 10.0),
+                data.get('delivery_fee', 15.0),
+                data.get('free_delivery_min_value', 100.0),
+                data.get('min_order_value', 0),
+                data.get('opening_time_weekday', '08:30'),
+                data.get('closing_time_weekday', '17:30'),
+                data.get('opening_time_saturday', '08:30'),
+                data.get('closing_time_saturday', '12:30'),
+                data.get('open_sunday', 0),
+                data.get('opening_time_sunday', ''),
+                data.get('closing_time_sunday', ''),
+                data.get('instagram_url', ''),
+                data.get('facebook_url', ''),
+                data.get('about_text', '')
+            ])
+        
         return jsonify({'success': True})
 
 @app.route('/api/admin/orders', methods=['GET', 'PUT'])

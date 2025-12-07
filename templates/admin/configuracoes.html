@@ -1,0 +1,419 @@
+{% extends "admin/base.html" %}
+{% block title %}Configurações - Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-cog"></i> Configurações da Loja</h1>
+</div>
+
+<div class="settings-container">
+    <form id="settingsForm" class="settings-form">
+        <div class="settings-section">
+            <h2><i class="fas fa-store"></i> Informações da Loja</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="store_name">Nome da Loja</label>
+                    <input type="text" id="store_name" name="store_name" placeholder="Nome da loja">
+                </div>
+                <div class="form-group">
+                    <label for="store_slogan">Slogan</label>
+                    <input type="text" id="store_slogan" name="store_slogan" placeholder="Slogan da loja">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="logo_url">URL do Logo</label>
+                <input type="text" id="logo_url" name="logo_url" placeholder="https://exemplo.com/logo.png">
+            </div>
+            <div class="form-group">
+                <label for="about_text">Sobre a Loja</label>
+                <textarea id="about_text" name="about_text" rows="3" placeholder="Descrição da loja..."></textarea>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2><i class="fas fa-phone"></i> Contatos</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="phone1">Telefone 1</label>
+                    <input type="text" id="phone1" name="phone1" placeholder="(31) 3044-5050">
+                </div>
+                <div class="form-group">
+                    <label for="phone2">Telefone 2</label>
+                    <input type="text" id="phone2" name="phone2" placeholder="(31) 3044-5060">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="phone3">Telefone 3</label>
+                    <input type="text" id="phone3" name="phone3" placeholder="(31) 3041-4327">
+                </div>
+                <div class="form-group">
+                    <label for="phone4">Telefone 4</label>
+                    <input type="text" id="phone4" name="phone4" placeholder="(31) 3044-7704">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="whatsapp">WhatsApp</label>
+                    <input type="text" id="whatsapp" name="whatsapp" placeholder="(31) 99212-2844">
+                </div>
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" placeholder="contato@loja.com">
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2><i class="fas fa-map-marker-alt"></i> Endereço</h2>
+            <div class="form-row">
+                <div class="form-group" style="flex: 2;">
+                    <label for="address">Rua</label>
+                    <input type="text" id="address" name="address" placeholder="R. Rio Xingu">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="number">Número</label>
+                    <input type="text" id="number" name="number" placeholder="753">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="neighborhood">Bairro</label>
+                    <input type="text" id="neighborhood" name="neighborhood" placeholder="Riacho">
+                </div>
+                <div class="form-group">
+                    <label for="city">Cidade</label>
+                    <input type="text" id="city" name="city" placeholder="Contagem">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="state">Estado</label>
+                    <input type="text" id="state" name="state" placeholder="MG" maxlength="2">
+                </div>
+                <div class="form-group">
+                    <label for="cep">CEP</label>
+                    <input type="text" id="cep" name="cep" placeholder="32265-290">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="latitude">Latitude</label>
+                    <input type="number" step="any" id="latitude" name="latitude" placeholder="-19.9191">
+                </div>
+                <div class="form-group">
+                    <label for="longitude">Longitude</label>
+                    <input type="number" step="any" id="longitude" name="longitude" placeholder="-44.0592">
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section highlight">
+            <h2><i class="fas fa-truck"></i> Configurações de Entrega</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="delivery_radius_km">Raio de Entrega (km)</label>
+                    <input type="number" step="0.1" id="delivery_radius_km" name="delivery_radius_km" placeholder="10">
+                    <small>Define até quantos km da loja você faz entrega</small>
+                </div>
+                <div class="form-group">
+                    <label for="delivery_fee">Taxa de Entrega (R$)</label>
+                    <input type="number" step="0.01" id="delivery_fee" name="delivery_fee" placeholder="15.00">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="free_delivery_min_value">Frete Grátis a partir de (R$)</label>
+                    <input type="number" step="0.01" id="free_delivery_min_value" name="free_delivery_min_value" placeholder="100.00">
+                    <small>Deixe 0 para nunca oferecer frete grátis</small>
+                </div>
+                <div class="form-group">
+                    <label for="min_order_value">Pedido Mínimo (R$)</label>
+                    <input type="number" step="0.01" id="min_order_value" name="min_order_value" placeholder="0">
+                    <small>Deixe 0 para não exigir pedido mínimo</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2><i class="fas fa-clock"></i> Horário de Funcionamento</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Segunda a Sexta</label>
+                    <div class="time-range">
+                        <input type="time" id="opening_time_weekday" name="opening_time_weekday" value="08:30">
+                        <span>às</span>
+                        <input type="time" id="closing_time_weekday" name="closing_time_weekday" value="17:30">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Sábado</label>
+                    <div class="time-range">
+                        <input type="time" id="opening_time_saturday" name="opening_time_saturday" value="08:30">
+                        <span>às</span>
+                        <input type="time" id="closing_time_saturday" name="closing_time_saturday" value="12:30">
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="open_sunday" name="open_sunday">
+                        <span>Abre aos Domingos</span>
+                    </label>
+                </div>
+                <div class="form-group" id="sundayHoursGroup" style="display: none;">
+                    <label>Domingo</label>
+                    <div class="time-range">
+                        <input type="time" id="opening_time_sunday" name="opening_time_sunday">
+                        <span>às</span>
+                        <input type="time" id="closing_time_sunday" name="closing_time_sunday">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2><i class="fas fa-share-alt"></i> Redes Sociais</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="instagram_url">Instagram</label>
+                    <input type="url" id="instagram_url" name="instagram_url" placeholder="https://instagram.com/sualoja">
+                </div>
+                <div class="form-group">
+                    <label for="facebook_url">Facebook</label>
+                    <input type="url" id="facebook_url" name="facebook_url" placeholder="https://facebook.com/sualoja">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Salvar Configurações
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+.settings-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.settings-form {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.settings-section {
+    padding: 24px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.settings-section:last-of-type {
+    border-bottom: none;
+}
+
+.settings-section.highlight {
+    background: linear-gradient(135deg, #e8f4fd 0%, #f0f7ff 100%);
+}
+
+.settings-section h2 {
+    font-size: 1.1rem;
+    color: #0D3B66;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.settings-section h2 i {
+    color: #1a5490;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-row:last-child {
+    margin-bottom: 0;
+}
+
+.form-group {
+    flex: 1;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #1a5490;
+    box-shadow: 0 0 0 3px rgba(26, 84, 144, 0.1);
+}
+
+.form-group small {
+    display: block;
+    color: #6c757d;
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+.time-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.time-range input {
+    flex: 1;
+}
+
+.time-range span {
+    color: #6c757d;
+}
+
+.checkbox-label {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+}
+
+.form-actions {
+    padding: 24px;
+    background: #f8f9fa;
+    text-align: right;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0D3B66 0%, #1a5490 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 59, 102, 0.3);
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .settings-section {
+        padding: 16px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('settingsForm');
+    const openSundayCheckbox = document.getElementById('open_sunday');
+    const sundayHoursGroup = document.getElementById('sundayHoursGroup');
+
+    openSundayCheckbox.addEventListener('change', function() {
+        sundayHoursGroup.style.display = this.checked ? 'block' : 'none';
+    });
+
+    loadSettings();
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveSettings();
+    });
+
+    function loadSettings() {
+        fetch('/api/admin/store-settings')
+            .then(response => response.json())
+            .then(data => {
+                if (data && Object.keys(data).length > 0) {
+                    Object.keys(data).forEach(key => {
+                        const input = document.getElementById(key);
+                        if (input) {
+                            if (input.type === 'checkbox') {
+                                input.checked = data[key] == 1;
+                                if (key === 'open_sunday' && data[key] == 1) {
+                                    sundayHoursGroup.style.display = 'block';
+                                }
+                            } else {
+                                input.value = data[key] || '';
+                            }
+                        }
+                    });
+                }
+            })
+            .catch(err => console.error('Erro ao carregar configurações:', err));
+    }
+
+    function saveSettings() {
+        const formData = new FormData(form);
+        const data = {};
+        
+        formData.forEach((value, key) => {
+            data[key] = value;
+        });
+
+        data.open_sunday = openSundayCheckbox.checked ? 1 : 0;
+
+        fetch('/api/admin/store-settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('Configurações salvas com sucesso!');
+            } else {
+                alert('Erro ao salvar configurações');
+            }
+        })
+        .catch(err => {
+            console.error('Erro:', err);
+            alert('Erro ao salvar configurações');
+        });
+    }
+});
+</script>
+{% endblock %}
