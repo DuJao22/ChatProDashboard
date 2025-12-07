@@ -1879,6 +1879,8 @@ def handle_connect(auth=None):
             if customer:
                 session['customer_id'] = customer['id']
                 session['customer_name'] = customer['name']
+                session.permanent = True
+                session.modified = True
                 customer_id = customer['id']
 
         if customer:
@@ -1989,7 +1991,8 @@ def handle_message(data):
                 customer_id = conversation['customer_id']
                 # Atualizar a sessão e active_conversations
                 session['customer_id'] = customer_id
-                session.permanent = True # Manter sessão ativa
+                session.permanent = True
+                session.modified = True
 
             if customer_id:
                 customer = query_db('SELECT * FROM customers WHERE id = ?', [customer_id], one=True)
@@ -2106,6 +2109,7 @@ def process_chat_message(session_id, content, conv_data):
             # Cliente já cadastrado - confirmar dados
             session['customer_id'] = existing_customer['id']
             session.permanent = True
+            session.modified = True
             active_conversations[session_id]['data']['customer_id'] = existing_customer['id']
             active_conversations[session_id]['data']['phone'] = phone
             active_conversations[session_id]['data']['name'] = existing_customer['name']
@@ -2228,6 +2232,7 @@ def process_chat_message(session_id, content, conv_data):
 
             session['customer_id'] = customer_id
             session.permanent = True
+            session.modified = True
             active_conversations[session_id]['data']['customer_id'] = customer_id
             update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
                      [customer_id, conv_id])
@@ -2245,7 +2250,8 @@ def process_chat_message(session_id, content, conv_data):
                                    [user_data.get('phone', '')], one=True)
                 if existing:
                     session['customer_id'] = existing['id']
-                    session.permanent = True # Manter sessão ativa
+                    session.permanent = True
+                    session.modified = True
                     active_conversations[session_id]['data']['customer_id'] = existing['id']
                     active_conversations[session_id]['state'] = 'choosing_order_method'
                     update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
@@ -2548,7 +2554,8 @@ def process_chat_message(session_id, content, conv_data):
         if customer:
             # Atualizar sessão e conversa
             session['customer_id'] = customer['id']
-            session.permanent = True # Manter sessão ativa
+            session.permanent = True
+            session.modified = True
             active_conversations[session_id]['data']['customer_id'] = customer['id']
             active_conversations[session_id]['data']['name'] = customer['name']
             active_conversations[session_id]['data']['phone'] = customer['phone']
@@ -2627,7 +2634,8 @@ def process_chat_message(session_id, content, conv_data):
         if existing_customer:
             # Cliente já cadastrado
             session['customer_id'] = existing_customer['id']
-            session.permanent = True # Manter sessão ativa
+            session.permanent = True
+            session.modified = True
             active_conversations[session_id]['data']['customer_id'] = existing_customer['id']
             active_conversations[session_id]['data']['phone'] = phone
             active_conversations[session_id]['data']['name'] = existing_customer['name']
@@ -2793,6 +2801,7 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
 
             session['customer_id'] = customer_id
             session.permanent = True
+            session.modified = True
             active_conversations[session_id]['data']['customer_id'] = customer_id
             update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
                      [customer_id, conv_id])
@@ -2810,7 +2819,8 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
                                    [user_data.get('phone', '')], one=True)
                 if existing:
                     session['customer_id'] = existing['id']
-                    session.permanent = True # Manter sessão ativa
+                    session.permanent = True
+                    session.modified = True
                     active_conversations[session_id]['data']['customer_id'] = existing['id']
                     active_conversations[session_id]['state'] = 'choosing_order_method'
                     update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
@@ -2942,6 +2952,7 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
 
             session['customer_id'] = customer_id
             session.permanent = True
+            session.modified = True
             active_conversations[session_id]['data']['customer_id'] = customer_id
             update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
                      [customer_id, conv_id])
@@ -2959,7 +2970,8 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
                                    [user_data.get('phone', '')], one=True)
                 if existing:
                     session['customer_id'] = existing['id']
-                    session.permanent = True # Manter sessão ativa
+                    session.permanent = True
+                    session.modified = True
                     active_conversations[session_id]['data']['customer_id'] = existing['id']
                     active_conversations[session_id]['state'] = 'choosing_order_method'
                     update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
