@@ -65,45 +65,55 @@
         </div>
 
         <div class="settings-section">
-            <h2><i class="fas fa-map-marker-alt"></i> Endereço</h2>
+            <h2><i class="fas fa-map-marker-alt"></i> Endereço do Estabelecimento</h2>
+            
             <div class="form-row">
-                <div class="form-group" style="flex: 2;">
-                    <label for="address">Rua</label>
-                    <input type="text" id="address" name="address" placeholder="R. Rio Xingu">
+                <div class="form-group">
+                    <label for="cep">CEP <span style="color: #e74c3c;">*</span></label>
+                    <input type="text" id="cep" name="cep" placeholder="32265-290" maxlength="9" required>
+                    <small>Digite o CEP e o endereço será preenchido automaticamente</small>
                 </div>
-                <div class="form-group" style="flex: 1;">
-                    <label for="number">Número</label>
-                    <input type="text" id="number" name="number" placeholder="753">
+                <div class="form-group">
+                    <label for="number">Número <span style="color: #e74c3c;">*</span></label>
+                    <input type="text" id="number" name="number" placeholder="753" required>
                 </div>
             </div>
+
+            <div class="form-group">
+                <label for="complement">Complemento</label>
+                <input type="text" id="complement" name="complement" placeholder="Sala, Loja, etc (opcional)">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="address">Rua</label>
+                    <input type="text" id="address" name="address" placeholder="Aguardando CEP..." readonly>
+                </div>
+            </div>
+            
             <div class="form-row">
                 <div class="form-group">
                     <label for="neighborhood">Bairro</label>
-                    <input type="text" id="neighborhood" name="neighborhood" placeholder="Riacho">
+                    <input type="text" id="neighborhood" name="neighborhood" placeholder="Aguardando CEP..." readonly>
                 </div>
                 <div class="form-group">
                     <label for="city">Cidade</label>
-                    <input type="text" id="city" name="city" placeholder="Contagem">
+                    <input type="text" id="city" name="city" placeholder="Aguardando CEP..." readonly>
                 </div>
             </div>
+            
             <div class="form-row">
                 <div class="form-group">
                     <label for="state">Estado</label>
-                    <input type="text" id="state" name="state" placeholder="MG" maxlength="2">
+                    <input type="text" id="state" name="state" placeholder="UF" maxlength="2" readonly>
                 </div>
-                <div class="form-group">
-                    <label for="cep">CEP</label>
-                    <input type="text" id="cep" name="cep" placeholder="32265-290">
-                </div>
-            </div>
-            <div class="form-row">
                 <div class="form-group">
                     <label for="latitude">Latitude</label>
-                    <input type="number" step="any" id="latitude" name="latitude" placeholder="-19.9191">
+                    <input type="number" step="any" id="latitude" name="latitude" placeholder="Automático" readonly>
                 </div>
                 <div class="form-group">
                     <label for="longitude">Longitude</label>
-                    <input type="number" step="any" id="longitude" name="longitude" placeholder="-44.0592">
+                    <input type="number" step="any" id="longitude" name="longitude" placeholder="Automático" readonly>
                 </div>
             </div>
         </div>
@@ -347,6 +357,51 @@
 
 {% block extra_js %}
 <script>
+// Buscar endereço pelo CEP
+async function searchCEP(cep) {
+    const cleanCEP = cep.replace(/\D/g, '');
+    
+    if (cleanCEP.length !== 8) {
+        return;
+    }
+
+    try {
+        // Buscar dados do CEP
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
+        const data = await response.json();
+
+        if (data.erro) {
+            alert('❌ CEP não encontrado!');
+            return;
+        }
+
+        // Preencher campos automaticamente
+        document.getElementById('address').value = data.logradouro || '';
+        document.getElementById('neighborhood').value = data.bairro || '';
+        document.getElementById('city').value = data.localidade || '';
+        document.getElementById('state').value = data.uf || '';
+
+        // Buscar coordenadas via Nominatim
+        const addressQuery = `${data.logradouro}, ${data.bairro}, ${data.localidade}, ${data.uf}, Brasil`;
+        const geoResponse = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressQuery)}&format=json&limit=1`,
+            { headers: { 'User-Agent': 'AriguaDistribuidora/1.0' } }
+        );
+        
+        const geoData = await geoResponse.json();
+        
+        if (geoData && geoData.length > 0) {
+            document.getElementById('latitude').value = parseFloat(geoData[0].lat).toFixed(6);
+            document.getElementById('longitude').value = parseFloat(geoData[0].lon).toFixed(6);
+        }
+
+        alert('✅ Endereço encontrado e preenchido automaticamente!');
+    } catch (error) {
+        console.error('Erro ao buscar CEP:', error);
+        alert('❌ Erro ao buscar CEP. Tente novamente.');
+    }
+}
+
 // Carregar configurações
 async function loadSettings() {
     try {
@@ -365,12 +420,13 @@ async function loadSettings() {
             document.getElementById('phone4').value = data.phone4 || '';
             document.getElementById('whatsapp').value = data.whatsapp || '';
             document.getElementById('email').value = data.email || '';
-            document.getElementById('address').value = data.address || '';
+            document.getElementById('cep').value = data.cep || '';
             document.getElementById('number').value = data.number || '';
+            document.getElementById('complement').value = data.complement || '';
+            document.getElementById('address').value = data.address || '';
             document.getElementById('neighborhood').value = data.neighborhood || '';
             document.getElementById('city').value = data.city || '';
             document.getElementById('state').value = data.state || '';
-            document.getElementById('cep').value = data.cep || '';
             document.getElementById('latitude').value = data.latitude || '';
             document.getElementById('longitude').value = data.longitude || '';
             document.getElementById('delivery_radius_km').value = data.delivery_radius_km || 10;
@@ -404,6 +460,20 @@ async function loadSettings() {
     }
 }
 
+// Event listener para busca automática de CEP
+document.getElementById('cep').addEventListener('blur', function() {
+    searchCEP(this.value);
+});
+
+// Máscara para CEP
+document.getElementById('cep').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 5) {
+        value = value.slice(0, 5) + '-' + value.slice(5, 8);
+    }
+    e.target.value = value;
+});
+
 // Salvar configurações
 document.getElementById('settingsForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -419,12 +489,13 @@ document.getElementById('settingsForm').addEventListener('submit', async (e) => 
         phone4: document.getElementById('phone4').value,
         whatsapp: document.getElementById('whatsapp').value,
         email: document.getElementById('email').value,
+        cep: document.getElementById('cep').value,
         address: document.getElementById('address').value,
         number: document.getElementById('number').value,
+        complement: document.getElementById('complement').value,
         neighborhood: document.getElementById('neighborhood').value,
         city: document.getElementById('city').value,
         state: document.getElementById('state').value,
-        cep: document.getElementById('cep').value,
         latitude: document.getElementById('latitude').value,
         longitude: document.getElementById('longitude').value,
         delivery_radius_km: parseFloat(document.getElementById('delivery_radius_km').value),
