@@ -1857,63 +1857,69 @@ def format_orders_for_chat(orders):
 
 @socketio.on('connect')
 def handle_connect(auth=None):
-    session_id = session.get('session_id')
-    if not session_id:
-        session_id = generate_token()
-        session['session_id'] = session_id
-        session.permanent = False # Sessão anônima não é permanente
+    try:
+        session_id = session.get('session_id')
+        if not session_id:
+            session_id = generate_token()
+            session['session_id'] = session_id
+            session.permanent = False
 
-    join_room(session_id)
+        join_room(session_id)
 
-    conversation = query_db('SELECT * FROM conversations WHERE session_id = ? ORDER BY created_at DESC LIMIT 1', 
-                           [session_id], one=True)
+        conversation = query_db('SELECT * FROM conversations WHERE session_id = ? ORDER BY created_at DESC LIMIT 1', 
+                               [session_id], one=True)
 
-    if not conversation:
-        conv_id = insert_db('INSERT INTO conversations (session_id, status, created_at, updated_at) VALUES (?, ?, ?, ?)',
-                           [session_id, 'active', brasilia_now(), brasilia_now()])
-    else:
-        conv_id = conversation['id']
+        if not conversation:
+            conv_id = insert_db('INSERT INTO conversations (session_id, status, created_at, updated_at) VALUES (?, ?, ?, ?)',
+                               [session_id, 'active', brasilia_now(), brasilia_now()])
+        else:
+            conv_id = conversation['id']
 
-    customer_id = session.get('customer_id')
-    customer = None
+        customer_id = session.get('customer_id')
+        customer = None
 
-    # Primeiro tenta buscar pela sessão
-    if customer_id:
-        customer = query_db('SELECT * FROM customers WHERE id = ?', [customer_id], one=True)
+        if customer_id:
+            customer = query_db('SELECT * FROM customers WHERE id = ?', [customer_id], one=True)
 
-    # Se não encontrou na sessão, tenta buscar pela conversa existente
-    if not customer and conversation and conversation['customer_id']:
-        customer = query_db('SELECT * FROM customers WHERE id = ?', [conversation['customer_id']], one=True)
+        if not customer and conversation and conversation['customer_id']:
+            customer = query_db('SELECT * FROM customers WHERE id = ?', [conversation['customer_id']], one=True)
+            if customer:
+                session['customer_id'] = customer['id']
+                session['customer_name'] = customer['name']
+                customer_id = customer['id']
+
         if customer:
-            session['customer_id'] = customer['id']
-            session['customer_name'] = customer['name']
-            customer_id = customer['id']
+            pending_order = query_db(
+                'SELECT * FROM chat_pending_orders WHERE conversation_id = ?', 
+                [conv_id], one=True
+            )
 
-    if customer:
-        # Verificar se há pedido pendente para restaurar
-        pending_order = query_db(
-            'SELECT * FROM chat_pending_orders WHERE conversation_id = ?', 
-            [conv_id], one=True
-        )
-
-        if pending_order:
-            # Restaurar estado de confirmação de pedido pendente
-            try:
-                order_items = json.loads(pending_order['items_json'])
-                active_conversations[session_id] = {
-                    'conversation_id': conv_id,
-                    'state': 'awaiting_order_confirmation',
-                    'data': {
-                        'customer_id': customer['id'],
-                        'name': customer['name'],
-                        'phone': customer['phone'],
-                        'pending_order_items': order_items,
-                        'pending_order_total': pending_order['total']
+            if pending_order:
+                try:
+                    order_items = json.loads(pending_order['items_json'])
+                    active_conversations[session_id] = {
+                        'conversation_id': conv_id,
+                        'state': 'awaiting_order_confirmation',
+                        'data': {
+                            'customer_id': customer['id'],
+                            'name': customer['name'],
+                            'phone': customer['phone'],
+                            'pending_order_items': order_items,
+                            'pending_order_total': pending_order['total']
+                        }
                     }
-                }
-                print(f"✅ Pedido pendente restaurado na reconexão para cliente {customer['name']}")
-            except Exception as e:
-                print(f"⚠️ Erro ao restaurar pedido pendente: {e}")
+                except Exception as e:
+                    print(f"⚠️ Erro ao restaurar pedido: {e}")
+                    active_conversations[session_id] = {
+                        'conversation_id': conv_id,
+                        'state': 'registered',
+                        'data': {
+                            'customer_id': customer['id'],
+                            'name': customer['name'],
+                            'phone': customer['phone']
+                        }
+                    }
+            else:
                 active_conversations[session_id] = {
                     'conversation_id': conv_id,
                     'state': 'registered',
@@ -1923,44 +1929,41 @@ def handle_connect(auth=None):
                         'phone': customer['phone']
                     }
                 }
+            update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', [customer['id'], conv_id])
         else:
             active_conversations[session_id] = {
                 'conversation_id': conv_id,
-                'state': 'registered',
-                'data': {
-                    'customer_id': customer['id'],
-                    'name': customer['name'],
-                    'phone': customer['phone']
-                }
+                'state': 'awaiting_phone_first',
+                'data': {}
             }
-        update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', [customer['id'], conv_id])
-    else:
-        active_conversations[session_id] = {
-            'conversation_id': conv_id,
-            'state': 'awaiting_phone_first',
-            'data': {}
-        }
 
-    messages = query_db('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at', [conv_id])
+        # Carregar mensagens existentes
+        messages = query_db('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at', [conv_id])
 
-    if messages:
-        emit('load_messages', [serialize_message(m) for m in messages])
-    else:
-        if customer:
-            first_name = customer['name'].split()[0] if customer['name'] else 'amigo'
-            welcome_msg = f"Olá, {first_name}! 😊\n\nBem-vindo à Ariguá Distribuidora!\n\nEm que posso te ajudar hoje?"
+        if messages and len(messages) > 0:
+            # Apenas carregar mensagens, não enviar nova
+            emit('load_messages', [serialize_message(m) for m in messages])
         else:
-            welcome_msg = "Olá! 😊\n\nBem-vindo à Ariguá Distribuidora!\n\nPara começar, me informe seu telefone com DDD.\n\nExemplo: 31 99999-9999"
+            # Só enviar mensagem de boas-vindas se não houver mensagens
+            if customer:
+                first_name = customer['name'].split()[0] if customer['name'] else 'amigo'
+                welcome_msg = f"Olá, {first_name}! 😊\n\nBem-vindo à Ariguá Distribuidora!\n\nEm que posso te ajudar hoje?"
+            else:
+                welcome_msg = "Olá! 😊\n\nBem-vindo à Ariguá Distribuidora!\n\nPara começar, me informe seu telefone com DDD.\n\nExemplo: 31 99999-9999"
 
-        msg_id = insert_db('INSERT INTO messages (conversation_id, sender, content, created_at) VALUES (?, ?, ?, ?)',
-                          [conv_id, 'bot', welcome_msg, brasilia_now()])
+            msg_id = insert_db('INSERT INTO messages (conversation_id, sender, content, created_at) VALUES (?, ?, ?, ?)',
+                              [conv_id, 'bot', welcome_msg, brasilia_now()])
 
-        emit('message', {
-            'id': msg_id,
-            'sender': 'bot',
-            'content': welcome_msg,
-            'timestamp': brasilia_now().isoformat()
-        })
+            emit('message', {
+                'id': msg_id,
+                'sender': 'bot',
+                'content': welcome_msg,
+                'timestamp': brasilia_now().isoformat()
+            })
+    except Exception as e:
+        print(f"❌ Erro ao conectar: {e}")
+        import traceback
+        traceback.print_exc()
 
 @socketio.on('disconnect')
 def handle_disconnect():

@@ -42,6 +42,19 @@ document.addEventListener('DOMContentLoaded', function() {
         scrollToBottom();
     });
 
+    // Prevenir múltiplas conexões
+    socket.on('connect', function() {
+        console.log('✅ Conectado ao chat');
+    });
+
+    socket.on('disconnect', function() {
+        console.log('❌ Desconectado do chat');
+    });
+
+    socket.on('connect_error', function(error) {
+        console.error('❌ Erro de conexão:', error);
+    });
+
     function addMessage(sender, content, timestamp, isHistorical = false) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}`;
