@@ -347,73 +347,120 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('settingsForm');
-    const openSundayCheckbox = document.getElementById('open_sunday');
-    const sundayHoursGroup = document.getElementById('sundayHoursGroup');
+// Carregar configurações
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/store/settings');
+        const result = await response.json();
 
-    openSundayCheckbox.addEventListener('change', function() {
-        sundayHoursGroup.style.display = this.checked ? 'block' : 'none';
-    });
-
-    loadSettings();
-
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        saveSettings();
-    });
-
-    function loadSettings() {
-        fetch('/api/admin/store-settings')
-            .then(response => response.json())
-            .then(data => {
-                if (data && Object.keys(data).length > 0) {
-                    Object.keys(data).forEach(key => {
-                        const input = document.getElementById(key);
-                        if (input) {
-                            if (input.type === 'checkbox') {
-                                input.checked = data[key] == 1;
-                                if (key === 'open_sunday' && data[key] == 1) {
-                                    sundayHoursGroup.style.display = 'block';
-                                }
-                            } else {
-                                input.value = data[key] || '';
-                            }
-                        }
-                    });
-                }
-            })
-            .catch(err => console.error('Erro ao carregar configurações:', err));
-    }
-
-    function saveSettings() {
-        const formData = new FormData(form);
-        const data = {};
-        
-        formData.forEach((value, key) => {
-            data[key] = value;
-        });
-
-        data.open_sunday = openSundayCheckbox.checked ? 1 : 0;
-
-        fetch('/api/admin/store-settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                alert('Configurações salvas com sucesso!');
+        if (result.success && result.data) {
+            const data = result.data;
+            document.getElementById('store_name').value = data.store_name || '';
+            document.getElementById('store_slogan').value = data.store_slogan || '';
+            document.getElementById('logo_url').value = data.logo_url || '';
+            document.getElementById('about_text').value = data.about_text || '';
+            document.getElementById('phone1').value = data.phone1 || '';
+            document.getElementById('phone2').value = data.phone2 || '';
+            document.getElementById('phone3').value = data.phone3 || '';
+            document.getElementById('phone4').value = data.phone4 || '';
+            document.getElementById('whatsapp').value = data.whatsapp || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('address').value = data.address || '';
+            document.getElementById('number').value = data.number || '';
+            document.getElementById('neighborhood').value = data.neighborhood || '';
+            document.getElementById('city').value = data.city || '';
+            document.getElementById('state').value = data.state || '';
+            document.getElementById('cep').value = data.cep || '';
+            document.getElementById('latitude').value = data.latitude || '';
+            document.getElementById('longitude').value = data.longitude || '';
+            document.getElementById('delivery_radius_km').value = data.delivery_radius_km || 10;
+            document.getElementById('delivery_fee').value = data.delivery_fee || 5;
+            document.getElementById('free_delivery_min_value').value = data.free_delivery_min_value || 100;
+            document.getElementById('min_order_value').value = data.min_order_value || 0;
+            document.getElementById('opening_time_weekday').value = data.opening_time_weekday || '08:30';
+            document.getElementById('closing_time_weekday').value = data.closing_time_weekday || '17:30';
+            document.getElementById('opening_time_saturday').value = data.opening_time_saturday || '08:30';
+            document.getElementById('closing_time_saturday').value = data.closing_time_saturday || '12:30';
+            
+            const openSundayCheckbox = document.getElementById('open_sunday');
+            const sundayHoursGroup = document.getElementById('sundayHoursGroup');
+            
+            if (data.open_sunday) {
+                openSundayCheckbox.checked = true;
+                sundayHoursGroup.style.display = 'block';
+                document.getElementById('opening_time_sunday').value = data.opening_time_sunday || '';
+                document.getElementById('closing_time_sunday').value = data.closing_time_sunday || '';
             } else {
-                alert('Erro ao salvar configurações');
+                openSundayCheckbox.checked = false;
+                sundayHoursGroup.style.display = 'none';
             }
-        })
-        .catch(err => {
-            console.error('Erro:', err);
-            alert('Erro ao salvar configurações');
+            openSundayCheckbox.addEventListener('change', function() {
+                sundayHoursGroup.style.display = this.checked ? 'block' : 'none';
+            });
+
+        }
+    } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+    }
+}
+
+// Salvar configurações
+document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = {
+        store_name: document.getElementById('store_name').value,
+        store_slogan: document.getElementById('store_slogan').value,
+        logo_url: document.getElementById('logo_url').value,
+        about_text: document.getElementById('about_text').value,
+        phone1: document.getElementById('phone1').value,
+        phone2: document.getElementById('phone2').value,
+        phone3: document.getElementById('phone3').value,
+        phone4: document.getElementById('phone4').value,
+        whatsapp: document.getElementById('whatsapp').value,
+        email: document.getElementById('email').value,
+        address: document.getElementById('address').value,
+        number: document.getElementById('number').value,
+        neighborhood: document.getElementById('neighborhood').value,
+        city: document.getElementById('city').value,
+        state: document.getElementById('state').value,
+        cep: document.getElementById('cep').value,
+        latitude: document.getElementById('latitude').value,
+        longitude: document.getElementById('longitude').value,
+        delivery_radius_km: parseFloat(document.getElementById('delivery_radius_km').value),
+        delivery_fee: parseFloat(document.getElementById('delivery_fee').value),
+        free_delivery_min_value: parseFloat(document.getElementById('free_delivery_min_value').value),
+        min_order_value: parseFloat(document.getElementById('min_order_value').value),
+        opening_time_weekday: document.getElementById('opening_time_weekday').value,
+        closing_time_weekday: document.getElementById('closing_time_weekday').value,
+        opening_time_saturday: document.getElementById('opening_time_saturday').value,
+        closing_time_saturday: document.getElementById('closing_time_saturday').value,
+        open_sunday: document.getElementById('open_sunday').checked ? 1 : 0,
+        opening_time_sunday: document.getElementById('opening_time_sunday').value,
+        closing_time_sunday: document.getElementById('closing_time_sunday').value
+    };
+
+    try {
+        const response = await fetch('/api/store/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
         });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('✅ Configurações salvas com sucesso!');
+        } else {
+            alert('❌ Erro: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Erro ao salvar:', error);
+        alert('❌ Erro ao salvar configurações');
     }
 });
+
+// Carregar ao iniciar
+loadSettings();
 </script>
 {% endblock %}

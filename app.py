@@ -46,6 +46,10 @@ def get_db():
         g.db.row_factory = sqlitecloud.Row
     return g.db
 
+def get_db_connection():
+    """Retorna uma conexão com o banco de dados SQLite Cloud."""
+    return sqlitecloud.connect(SQLITECLOUD_URL)
+
 @app.teardown_appcontext
 def close_db(error):
     db = g.pop('db', None)
@@ -126,7 +130,7 @@ def init_db():
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
-            
+
             # Inserir configuração padrão se não existir
             existing = conn.execute('SELECT id FROM store_settings LIMIT 1').fetchone()
             if not existing:
@@ -188,7 +192,7 @@ def get_coordinates_from_cep(cep):
     """Obtém coordenadas aproximadas a partir do CEP usando Nominatim"""
     try:
         cep_clean = re.sub(r'\D', '', cep)
-        
+
         # Primeiro busca o endereço via ViaCEP
         response = requests.get(f'https://viacep.com.br/ws/{cep_clean}/json/', timeout=5)
         if response.status_code == 200:
@@ -196,7 +200,7 @@ def get_coordinates_from_cep(cep):
             if 'erro' not in data:
                 # Monta o endereço para geocodificação
                 address = f"{data.get('logradouro', '')}, {data.get('bairro', '')}, {data.get('localidade', '')}, {data.get('uf', '')}, Brasil"
-                
+
                 # Usa Nominatim para geocodificação
                 geo_response = requests.get(
                     'https://nominatim.openstreetmap.org/search',
@@ -204,7 +208,7 @@ def get_coordinates_from_cep(cep):
                     headers={'User-Agent': 'AriguaDistribuidora/1.0'},
                     timeout=5
                 )
-                
+
                 if geo_response.status_code == 200:
                     geo_data = geo_response.json()
                     if geo_data and len(geo_data) > 0:
@@ -214,23 +218,23 @@ def get_coordinates_from_cep(cep):
                         }
     except Exception as e:
         print(f"Erro ao obter coordenadas: {e}")
-    
+
     return None
 
 def calculate_distance_km(lat1, lon1, lat2, lon2):
     """Calcula distância entre duas coordenadas usando fórmula de Haversine"""
     import math
-    
+
     R = 6371  # Raio da Terra em km
-    
+
     lat1_rad = math.radians(lat1)
     lat2_rad = math.radians(lat2)
     delta_lat = math.radians(lat2 - lat1)
     delta_lon = math.radians(lon2 - lon1)
-    
+
     a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2)**2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    
+
     return R * c
 
 def check_delivery_availability(customer_cep):
@@ -240,26 +244,26 @@ def check_delivery_availability(customer_cep):
         settings = query_db('SELECT * FROM store_settings LIMIT 1', one=True)
         if not settings:
             return {'available': True, 'message': 'Configurações não encontradas, entrega liberada'}
-        
+
         store_lat = settings['latitude']
         store_lon = settings['longitude']
         radius_km = settings['delivery_radius_km'] or 10.0
-        
+
         # Se a loja não tem coordenadas, libera entrega
         if not store_lat or not store_lon:
             return {'available': True, 'message': 'Coordenadas da loja não configuradas'}
-        
+
         # Obter coordenadas do cliente
         customer_coords = get_coordinates_from_cep(customer_cep)
         if not customer_coords:
             return {'available': True, 'message': 'Não foi possível localizar o CEP'}
-        
+
         # Calcular distância
         distance = calculate_distance_km(
             store_lat, store_lon,
             customer_coords['lat'], customer_coords['lon']
         )
-        
+
         if distance <= radius_km:
             return {
                 'available': True,
@@ -739,10 +743,17 @@ def admin_login():
 
     return render_template('admin_login.html')
 
+# === ROTA: Admin - Dashboard ===
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
     return render_template('admin/dashboard.html')
+
+# === ROTA: Admin - Configurações ===
+@app.route('/admin/configuracoes')
+@admin_required
+def admin_configuracoes():
+    return render_template('admin/configuracoes.html')
 
 @app.route('/admin/produtos')
 @admin_required
@@ -769,15 +780,163 @@ def admin_conversas():
 def admin_relatorios():
     return render_template('admin/relatorios.html')
 
-@app.route('/admin/configuracoes')
+# === API: Obter Configurações da Loja ===
+@app.route('/api/store/settings', methods=['GET'])
 @admin_required
-def admin_configuracoes():
-    return render_template('admin/configuracoes.html')
+def get_store_settings():
+    try:
+        conn = get_db_connection()
+        settings = conn.execute('SELECT * FROM store_settings WHERE id = 1').fetchone()
+        conn.close()
 
-@app.route('/admin/logout')
-def admin_logout():
-    session.clear()
-    return redirect(url_for('admin_login'))
+        if settings:
+            return jsonify({
+                'success': True,
+                'data': dict(settings)
+            })
+        else:
+            # Retornar configurações padrão
+            return jsonify({
+                'success': True,
+                'data': {
+                    'id': 1,
+                    'store_name': 'Ariguá Distribuidora',
+                    'store_logo': '/static/images/logo-arigua.png',
+                    'store_phone': '(31) 99212-2844',
+                    'store_email': 'contato@arigua.com.br',
+                    'store_address': 'R. Rio Xingu, 753 - Riacho, Contagem - MG',
+                    'store_cep': '32265-290',
+                    'delivery_radius_km': 10.0,
+                    'delivery_fee': 5.00,
+                    'min_order_value': 20.00
+                }
+            })
+    except Exception as e:
+        print(f"Erro ao obter configurações: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# === API: Salvar Configurações da Loja ===
+@app.route('/api/store/settings', methods=['POST'])
+@admin_required
+def save_store_settings():
+    try:
+        data = request.json
+        conn = get_db_connection()
+
+        # Verificar se já existe configuração
+        existing = conn.execute('SELECT id FROM store_settings WHERE id = 1').fetchone()
+
+        if existing:
+            # Atualizar
+            conn.execute('''
+                UPDATE store_settings SET
+                    store_name = ?,
+                    store_phone = ?,
+                    store_email = ?,
+                    store_address = ?,
+                    store_cep = ?,
+                    delivery_radius_km = ?,
+                    delivery_fee = ?,
+                    min_order_value = ?
+                WHERE id = 1
+            ''', (
+                data.get('store_name'),
+                data.get('store_phone'),
+                data.get('store_email'),
+                data.get('store_address'),
+                data.get('store_cep'),
+                data.get('delivery_radius_km'),
+                data.get('delivery_fee'),
+                data.get('min_order_value')
+            ))
+        else:
+            # Inserir
+            conn.execute('''
+                INSERT INTO store_settings (
+                    id, store_name, store_phone, store_email, 
+                    store_address, store_cep, delivery_radius_km,
+                    delivery_fee, min_order_value
+                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                data.get('store_name'),
+                data.get('store_phone'),
+                data.get('store_email'),
+                data.get('store_address'),
+                data.get('store_cep'),
+                data.get('delivery_radius_km'),
+                data.get('delivery_fee'),
+                data.get('min_order_value')
+            ))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'message': 'Configurações salvas com sucesso!'})
+    except Exception as e:
+        print(f"Erro ao salvar configurações: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# === API: Verificar Raio de Entrega ===
+@app.route('/api/check-delivery', methods=['POST'])
+def check_delivery_radius():
+    try:
+        data = request.json
+        customer_cep = data.get('cep', '').replace('-', '').replace('.', '')
+
+        if not customer_cep or len(customer_cep) != 8:
+            return jsonify({'success': False, 'message': 'CEP inválido'})
+
+        # Obter configurações da loja
+        conn = get_db_connection()
+        settings = conn.execute('SELECT store_cep, delivery_radius_km FROM store_settings WHERE id = 1').fetchone()
+        conn.close()
+
+        if not settings or not settings['store_cep']:
+            return jsonify({'success': True, 'delivers': True, 'message': 'Raio de entrega não configurado'})
+
+        store_cep = settings['store_cep'].replace('-', '').replace('.', '')
+        radius_km = float(settings['delivery_radius_km'] or 10)
+
+        # Calcular distância usando API ViaCEP + geolocalização simples
+        import requests
+
+        # Obter coordenadas do CEP da loja
+        store_response = requests.get(f'https://viacep.com.br/ws/{store_cep}/json/')
+        if store_response.status_code != 200:
+            return jsonify({'success': True, 'delivers': True, 'message': 'Erro ao verificar CEP da loja'})
+
+        # Obter coordenadas do CEP do cliente
+        customer_response = requests.get(f'https://viacep.com.br/ws/{customer_cep}/json/')
+        if customer_response.status_code != 200:
+            return jsonify({'success': False, 'message': 'CEP do cliente não encontrado'})
+
+        customer_data = customer_response.json()
+        if 'erro' in customer_data:
+            return jsonify({'success': False, 'message': 'CEP do cliente inválido'})
+
+        # Verificação simplificada por bairro/cidade
+        store_data = store_response.json()
+
+        # Se for mesma cidade, aceitar
+        if store_data.get('localidade') == customer_data.get('localidade'):
+            return jsonify({
+                'success': True,
+                'delivers': True,
+                'message': f'Entregamos em {customer_data.get("localidade")}!'
+            })
+
+        # Caso contrário, não entrega
+        return jsonify({
+            'success': True,
+            'delivers': False,
+            'message': f'Desculpe, não entregamos em {customer_data.get("localidade")}. Entregamos apenas em {store_data.get("localidade")}.'
+        })
+
+    except Exception as e:
+        print(f"Erro ao verificar raio de entrega: {e}")
+        # Em caso de erro, permitir entrega
+        return jsonify({'success': True, 'delivers': True, 'message': 'Erro ao verificar entrega, mas pedido será aceito'})
+
 
 @app.route('/api/cep/<cep>')
 def buscar_cep(cep):
@@ -1160,116 +1319,163 @@ def admin_categories():
         update_db('UPDATE categories SET active = 0 WHERE id = ?', [cat_id])
         return jsonify({'success': True})
 
-@app.route('/api/admin/store-settings', methods=['GET', 'PUT'])
+# === API: Obter Configurações da Loja ===
+@app.route('/api/store/settings', methods=['GET'])
 @admin_required
-def admin_store_settings():
-    if request.method == 'GET':
-        settings = query_db('SELECT * FROM store_settings LIMIT 1', one=True)
-        if settings:
-            return jsonify(dict(settings))
-        return jsonify({})
+def get_store_settings():
+    try:
+        conn = get_db_connection()
+        settings = conn.execute('SELECT * FROM store_settings WHERE id = 1').fetchone()
+        conn.close()
 
-    elif request.method == 'PUT':
-        data = request.get_json()
-        
-        # Verificar se já existe configuração
-        existing = query_db('SELECT id FROM store_settings LIMIT 1', one=True)
-        
-        if existing:
-            update_db('''
-                UPDATE store_settings SET 
-                    store_name = ?, store_slogan = ?, logo_url = ?,
-                    phone1 = ?, phone2 = ?, phone3 = ?, phone4 = ?,
-                    whatsapp = ?, email = ?, address = ?, number = ?,
-                    neighborhood = ?, city = ?, state = ?, cep = ?,
-                    latitude = ?, longitude = ?, delivery_radius_km = ?,
-                    delivery_fee = ?, free_delivery_min_value = ?, min_order_value = ?,
-                    opening_time_weekday = ?, closing_time_weekday = ?,
-                    opening_time_saturday = ?, closing_time_saturday = ?,
-                    open_sunday = ?, opening_time_sunday = ?, closing_time_sunday = ?,
-                    instagram_url = ?, facebook_url = ?, about_text = ?,
-                    updated_at = ?
-                WHERE id = ?
-            ''', [
-                data.get('store_name', 'Ariguá Distribuidora'),
-                data.get('store_slogan', ''),
-                data.get('logo_url', ''),
-                data.get('phone1', ''),
-                data.get('phone2', ''),
-                data.get('phone3', ''),
-                data.get('phone4', ''),
-                data.get('whatsapp', ''),
-                data.get('email', ''),
-                data.get('address', ''),
-                data.get('number', ''),
-                data.get('neighborhood', ''),
-                data.get('city', ''),
-                data.get('state', ''),
-                data.get('cep', ''),
-                data.get('latitude'),
-                data.get('longitude'),
-                data.get('delivery_radius_km', 10.0),
-                data.get('delivery_fee', 15.0),
-                data.get('free_delivery_min_value', 100.0),
-                data.get('min_order_value', 0),
-                data.get('opening_time_weekday', '08:30'),
-                data.get('closing_time_weekday', '17:30'),
-                data.get('opening_time_saturday', '08:30'),
-                data.get('closing_time_saturday', '12:30'),
-                data.get('open_sunday', 0),
-                data.get('opening_time_sunday', ''),
-                data.get('closing_time_sunday', ''),
-                data.get('instagram_url', ''),
-                data.get('facebook_url', ''),
-                data.get('about_text', ''),
-                brasilia_now(),
-                existing['id']
-            ])
+        if settings:
+            return jsonify({
+                'success': True,
+                'data': dict(settings)
+            })
         else:
-            insert_db('''
+            # Retornar configurações padrão
+            return jsonify({
+                'success': True,
+                'data': {
+                    'id': 1,
+                    'store_name': 'Ariguá Distribuidora',
+                    'store_logo': '/static/images/logo-arigua.png',
+                    'store_phone': '(31) 99212-2844',
+                    'store_email': 'contato@arigua.com.br',
+                    'store_address': 'R. Rio Xingu, 753 - Riacho, Contagem - MG',
+                    'store_cep': '32265-290',
+                    'delivery_radius_km': 10.0,
+                    'delivery_fee': 5.00,
+                    'min_order_value': 20.00
+                }
+            })
+    except Exception as e:
+        print(f"Erro ao obter configurações: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# === API: Salvar Configurações da Loja ===
+@app.route('/api/store/settings', methods=['POST'])
+@admin_required
+def save_store_settings():
+    try:
+        data = request.json
+        conn = get_db_connection()
+
+        # Verificar se já existe configuração
+        existing = conn.execute('SELECT id FROM store_settings WHERE id = 1').fetchone()
+
+        if existing:
+            # Atualizar
+            conn.execute('''
+                UPDATE store_settings SET
+                    store_name = ?,
+                    store_phone = ?,
+                    store_email = ?,
+                    store_address = ?,
+                    store_cep = ?,
+                    delivery_radius_km = ?,
+                    delivery_fee = ?,
+                    min_order_value = ?
+                WHERE id = 1
+            ''', (
+                data.get('store_name'),
+                data.get('store_phone'),
+                data.get('store_email'),
+                data.get('store_address'),
+                data.get('store_cep'),
+                data.get('delivery_radius_km'),
+                data.get('delivery_fee'),
+                data.get('min_order_value')
+            ))
+        else:
+            # Inserir
+            conn.execute('''
                 INSERT INTO store_settings (
-                    store_name, store_slogan, logo_url, phone1, phone2, phone3, phone4,
-                    whatsapp, email, address, number, neighborhood, city, state, cep,
-                    latitude, longitude, delivery_radius_km, delivery_fee, free_delivery_min_value,
-                    min_order_value, opening_time_weekday, closing_time_weekday,
-                    opening_time_saturday, closing_time_saturday, open_sunday,
-                    opening_time_sunday, closing_time_sunday, instagram_url, facebook_url, about_text
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', [
-                data.get('store_name', 'Ariguá Distribuidora'),
-                data.get('store_slogan', ''),
-                data.get('logo_url', ''),
-                data.get('phone1', ''),
-                data.get('phone2', ''),
-                data.get('phone3', ''),
-                data.get('phone4', ''),
-                data.get('whatsapp', ''),
-                data.get('email', ''),
-                data.get('address', ''),
-                data.get('number', ''),
-                data.get('neighborhood', ''),
-                data.get('city', ''),
-                data.get('state', ''),
-                data.get('cep', ''),
-                data.get('latitude'),
-                data.get('longitude'),
-                data.get('delivery_radius_km', 10.0),
-                data.get('delivery_fee', 15.0),
-                data.get('free_delivery_min_value', 100.0),
-                data.get('min_order_value', 0),
-                data.get('opening_time_weekday', '08:30'),
-                data.get('closing_time_weekday', '17:30'),
-                data.get('opening_time_saturday', '08:30'),
-                data.get('closing_time_saturday', '12:30'),
-                data.get('open_sunday', 0),
-                data.get('opening_time_sunday', ''),
-                data.get('closing_time_sunday', ''),
-                data.get('instagram_url', ''),
-                data.get('facebook_url', ''),
-                data.get('about_text', '')
-            ])
-        
-        return jsonify({'success': True})
+                    id, store_name, store_phone, store_email, 
+                    store_address, store_cep, delivery_radius_km,
+                    delivery_fee, min_order_value
+                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                data.get('store_name'),
+                data.get('store_phone'),
+                data.get('store_email'),
+                data.get('store_address'),
+                data.get('store_cep'),
+                data.get('delivery_radius_km'),
+                data.get('delivery_fee'),
+                data.get('min_order_value')
+            ))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'message': 'Configurações salvas com sucesso!'})
+    except Exception as e:
+        print(f"Erro ao salvar configurações: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# === API: Verificar Raio de Entrega ===
+@app.route('/api/check-delivery', methods=['POST'])
+def check_delivery_radius():
+    try:
+        data = request.json
+        customer_cep = data.get('cep', '').replace('-', '').replace('.', '')
+
+        if not customer_cep or len(customer_cep) != 8:
+            return jsonify({'success': False, 'message': 'CEP inválido'})
+
+        # Obter configurações da loja
+        conn = get_db_connection()
+        settings = conn.execute('SELECT store_cep, delivery_radius_km FROM store_settings WHERE id = 1').fetchone()
+        conn.close()
+
+        if not settings or not settings['store_cep']:
+            return jsonify({'success': True, 'delivers': True, 'message': 'Raio de entrega não configurado'})
+
+        store_cep = settings['store_cep'].replace('-', '').replace('.', '')
+        radius_km = float(settings['delivery_radius_km'] or 10)
+
+        # Calcular distância usando API ViaCEP + geolocalização simples
+        import requests
+
+        # Obter coordenadas do CEP da loja
+        store_response = requests.get(f'https://viacep.com.br/ws/{store_cep}/json/')
+        if store_response.status_code != 200:
+            return jsonify({'success': True, 'delivers': True, 'message': 'Erro ao verificar CEP da loja'})
+
+        # Obter coordenadas do CEP do cliente
+        customer_response = requests.get(f'https://viacep.com.br/ws/{customer_cep}/json/')
+        if customer_response.status_code != 200:
+            return jsonify({'success': False, 'message': 'CEP do cliente não encontrado'})
+
+        customer_data = customer_response.json()
+        if 'erro' in customer_data:
+            return jsonify({'success': False, 'message': 'CEP do cliente inválido'})
+
+        # Verificação simplificada por bairro/cidade
+        store_data = store_response.json()
+
+        # Se for mesma cidade, aceitar
+        if store_data.get('localidade') == customer_data.get('localidade'):
+            return jsonify({
+                'success': True,
+                'delivers': True,
+                'message': f'Entregamos em {customer_data.get("localidade")}!'
+            })
+
+        # Caso contrário, não entrega
+        return jsonify({
+            'success': True,
+            'delivers': False,
+            'message': f'Desculpe, não entregamos em {customer_data.get("localidade")}. Entregamos apenas em {store_data.get("localidade")}.'
+        })
+
+    except Exception as e:
+        print(f"Erro ao verificar raio de entrega: {e}")
+        # Em caso de erro, permitir entrega
+        return jsonify({'success': True, 'delivers': True, 'message': 'Erro ao verificar entrega, mas pedido será aceito'})
+
 
 @app.route('/api/admin/orders', methods=['GET', 'PUT'])
 @admin_required
@@ -1422,7 +1628,7 @@ INFORMAÇÕES DO CLIENTE:
 - Telefone: {customer['phone'] if customer else 'Não informado'}
 - Endereço: {customer['address'] if customer else 'Não cadastrado'}, {customer['number'] if customer else ''} {customer['complement'] if customer else ''}
 
-PRODUTOS DISPONÍVEIS:
+PRODUTOS DISPONIVEIS:
 {json.dumps(products_info, indent=2, ensure_ascii=False)}
 
 REGRAS CRÍTICAS DE INTERPRETAÇÃO DE PEDIDOS:
@@ -2458,75 +2664,11 @@ def process_chat_message(session_id, content, conv_data):
             print(f"Erro ao buscar CEP: {e}")
             return "Erro ao buscar CEP. Tenta de novo?"
 
-    # Coletando número para novo cadastro
+    # Finalizando novo cadastro
     if state == 'awaiting_number_new':
         active_conversations[session_id]['data']['number'] = content.strip()
         active_conversations[session_id]['state'] = 'awaiting_complement_new'
         return "Complemento? (apt, bloco, etc)\n\nSe não tiver, digite NÃO"
-
-    # Finalizando novo cadastro
-    if state == 'awaiting_complement_new':
-        complement = ''
-        if not any(word in content_lower for word in ['não', 'nao', 'sem']):
-            complement = content.strip()
-
-        active_conversations[session_id]['data']['complement'] = complement
-
-        try:
-            # Inserir novo cliente
-            customer_id = insert_db('''
-                INSERT INTO customers (name, phone, cep, address, number, complement, neighborhood, city, state, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', [
-                user_data.get('name', ''),
-                user_data.get('phone', ''),
-                user_data.get('cep', ''),
-                user_data.get('logradouro', ''),
-                user_data.get('number', ''),
-                complement,
-                user_data.get('bairro', ''),
-                user_data.get('cidade', ''),
-                user_data.get('estado', ''),
-                brasilia_now()
-            ])
-
-            session['customer_id'] = customer_id
-            session.permanent = True
-            session.modified = True
-            active_conversations[session_id]['data']['customer_id'] = customer_id
-            update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
-                     [customer_id, conv_id])
-
-            # Cadastro completo - mostrar produtos
-            active_conversations[session_id]['state'] = 'browsing_products'
-            first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
-            return f"[SHOW_PRODUCTS]Pronto, {first_name}! Cadastro feito! 🎉\n\nVeja nossos produtos abaixo."
-
-        except Exception as e:
-            error_msg = str(e).lower()
-            if 'unique constraint' in error_msg or 'duplicate' in error_msg.lower():
-                # Telefone duplicado - tentar recuperar cliente existente
-                existing = query_db('SELECT * FROM customers WHERE phone = ?', 
-                                   [user_data.get('phone', '')], one=True)
-                if existing:
-                    session['customer_id'] = existing['id']
-                    session.permanent = True
-                    session.modified = True
-                    active_conversations[session_id]['data']['customer_id'] = existing['id']
-                    active_conversations[session_id]['state'] = 'choosing_order_method'
-                    update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
-                             [existing['id'], conv_id])
-                    first_name = existing['name'].split()[0] if existing['name'] else 'amigo'
-                    return f"Oi, {first_name}! Você já estava cadastrado!\n\nComo quer continuar?\n\n1️⃣ Continuar aqui no chat\n2️⃣ Ir para a loja online\n\nDigite 1 ou 2"
-                else:
-                    active_conversations[session_id]['state'] = 'awaiting_name'
-                    active_conversations[session_id]['data'] = {}
-                    return "Esse telefone já está cadastrado!\n\nQuer usar outro número?"
-
-            print(f"Erro ao salvar cliente: {e}")
-            active_conversations[session_id]['state'] = 'awaiting_phone_first'
-            active_conversations[session_id]['data'] = {}
-            return "Ops, deu um erro! Vamos recomeçar.\n\nMe passa seu telefone com DDD:"
 
     # ============ FIM DOS NOVOS ESTADOS ============
 
