@@ -272,10 +272,10 @@ function loadChatActivity() {
             const chatHtml = recentConversations.map(conv => {
                 const customerName = conv.customer_name || 'Visitante';
                 const messageCount = conv.message_count || 0;
-                const lastUpdate = formatDate(conv.updated_at);
+                const lastUpdate = formatChatDate(conv.updated_at);
 
                 return `
-                    <div class="chat-activity-item">
+                    <div class="chat-activity-item" onclick="window.location.href='/admin/conversas'">
                         <div class="chat-avatar">
                             <i class="fas fa-user"></i>
                         </div>
@@ -299,4 +299,25 @@ function loadChatActivity() {
                 chatActivityContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Erro ao carregar conversas</div>';
             }
         });
+}
+
+function formatChatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const diffMinutes = Math.floor(diff / 60000);
+    const diffHours = Math.floor(diff / 3600000);
+    const diffDays = Math.floor(diff / 86400000);
+
+    if (diffMinutes < 1) return 'Agora';
+    if (diffMinutes < 60) return `${diffMinutes}min`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
+
+    // Para dispositivos móveis, formato mais curto
+    if (window.innerWidth < 768) {
+        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    }
+
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
