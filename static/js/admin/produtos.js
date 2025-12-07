@@ -33,22 +33,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function loadProducts() {
         fetch('/api/admin/products')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 302) {
+                        window.location.href = '/admin/login';
+                        return;
+                    }
+                    throw new Error('Erro ao carregar produtos');
+                }
+                return response.json();
+            })
             .then(data => {
+                if (!data) return;
                 products = data;
                 renderProducts(data);
             })
-            .catch(err => console.error('Error loading products:', err));
+            .catch(err => {
+                console.error('Error loading products:', err);
+                alert('Erro ao carregar produtos. Verifique sua conexão.');
+            });
     }
 
     function loadCategories() {
         fetch('/api/admin/categories')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 302) {
+                        window.location.href = '/admin/login';
+                        return;
+                    }
+                    throw new Error('Erro ao carregar categorias');
+                }
+                return response.json();
+            })
             .then(data => {
+                if (!data) return;
                 categories = data;
                 renderCategoryOptions();
             })
-            .catch(err => console.error('Error loading categories:', err));
+            .catch(err => {
+                console.error('Error loading categories:', err);
+            });
     }
 
     function renderCategoryOptions() {

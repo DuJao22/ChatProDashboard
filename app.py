@@ -1591,6 +1591,80 @@ def process_without_ai(content_lower, session_id=None, conv_data=None):
     return random.choice(responses)
 
 
+@app.route('/api/admin/products', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@admin_required
+def admin_products_api():
+    if request.method == 'GET':
+        products = query_db('''
+            SELECT p.*, c.name as category_name
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            ORDER BY p.name
+        ''')
+        return jsonify([dict(p) for p in products])
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        product_id = insert_db('''
+            INSERT INTO products (name, price, description, category_id, stock, image_url, active, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', [
+            data.get('name'),
+            data.get('price'),
+            data.get('description', ''),
+            data.get('category_id') or None,
+            data.get('stock', 0),
+            data.get('image_url', ''),
+            data.get('active', 1),
+            brasilia_now()
+        ])
+        return jsonify({'success': True, 'id': product_id})
+    
+    elif request.method == 'PUT':
+        data = request.get_json()
+        update_db('''
+            UPDATE products 
+            SET name = ?, price = ?, description = ?, category_id = ?, 
+                stock = ?, image_url = ?, active = ?, updated_at = ?
+            WHERE id = ?
+        ''', [
+            data.get('name'),
+            data.get('price'),
+            data.get('description', ''),
+            data.get('category_id') or None,
+            data.get('stock', 0),
+            data.get('image_url', ''),
+            data.get('active', 1),
+            brasilia_now(),
+            data.get('id')
+        ])
+        return jsonify({'success': True})
+    
+    elif request.method == 'DELETE':
+        product_id = request.args.get('id')
+        update_db('DELETE FROM products WHERE id = ?', [product_id])
+        return jsonify({'success': True})
+
+@app.route('/api/admin/categories', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@admin_required
+def admin_categories_api():
+    if request.method == 'GET':
+        categories = query_db('SELECT * FROM categories ORDER BY name')
+        return jsonify([dict(c) for c in categories])
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        category_id = insert_db('''
+            INSERT INTO categories (name, active, created_at)
+            VALUES (?, ?, ?)
+        ''', [data.get('name'), 1, brasilia_now()])
+        return jsonify({'success': True, 'id': category_id})
+    
+    elif request.method == 'DELETE':
+        category_id = request.args.get('id')
+        update_db('DELETE FROM categories WHERE id = ?', [category_id])
+        return jsonify({'success': True})
+
 @app.route('/api/admin/reports/customers')
 @admin_required
 def admin_report_customers():
