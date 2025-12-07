@@ -1665,6 +1665,82 @@ def admin_categories_api():
         update_db('DELETE FROM categories WHERE id = ?', [category_id])
         return jsonify({'success': True})
 
+@app.route('/api/admin/dashboard')
+@admin_required
+def admin_dashboard_api():
+    """API principal do dashboard com estatísticas gerais"""
+    # Total de pedidos
+    total_orders = query_db('SELECT COUNT(*) as count FROM orders', one=True)
+    
+    # Receita total (excluindo cancelados)
+    total_revenue = query_db('SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE status != "cancelled"', one=True)
+    
+    # Total de clientes
+    total_customers = query_db('SELECT COUNT(*) as count FROM customers', one=True)
+    
+    # Pedidos pendentes
+    pending_orders = query_db('SELECT COUNT(*) as count FROM orders WHERE status = "pending"', one=True)
+    
+    # Carrinhos abandonados (últimas 24h)
+    abandoned_carts = query_db('''
+        SELECT COUNT(DISTINCT COALESCE(customer_id, session_id)) as count 
+        FROM cart_items 
+        WHERE updated_at < datetime("now", "-24 hours")
+    ''', one=True)
+    
+    # Produtos ativos
+    total_products = query_db('SELECT COUNT(*) as count FROM products WHERE active = 1', one=True)
+    
+    # Vendas por dia (últimos 30 dias)
+    sales_by_day = query_db('''
+        SELECT date(created_at) as date, COALESCE(SUM(total), 0) as total, COUNT(*) as count
+        FROM orders
+        WHERE status != "cancelled" AND created_at >= datetime("now", "-30 days")
+        GROUP BY date(created_at)
+        ORDER BY date
+    ''')
+    
+    # Pedidos por status
+    orders_by_status = query_db('''
+        SELECT status, COUNT(*) as count
+        FROM orders
+        GROUP BY status
+    ''')
+    
+    # Top produtos (por receita)
+    top_products = query_db('''
+        SELECT p.name, SUM(oi.quantity) as total_sold, SUM(oi.quantity * oi.price) as revenue
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        JOIN orders o ON oi.order_id = o.id
+        WHERE o.status != "cancelled"
+        GROUP BY p.id
+        ORDER BY revenue DESC
+        LIMIT 10
+    ''')
+    
+    # Pedidos recentes
+    recent_orders = query_db('''
+        SELECT o.*, c.name as customer_name
+        FROM orders o
+        LEFT JOIN customers c ON o.customer_id = c.id
+        ORDER BY o.created_at DESC
+        LIMIT 10
+    ''')
+    
+    return jsonify({
+        'total_orders': total_orders['count'] if total_orders else 0,
+        'total_revenue': float(total_revenue['total']) if total_revenue else 0,
+        'total_customers': total_customers['count'] if total_customers else 0,
+        'pending_orders': pending_orders['count'] if pending_orders else 0,
+        'abandoned_carts': abandoned_carts['count'] if abandoned_carts else 0,
+        'total_products': total_products['count'] if total_products else 0,
+        'sales_by_day': [dict(s) for s in sales_by_day],
+        'orders_by_status': [dict(o) for o in orders_by_status],
+        'top_products': [dict(p) for p in top_products],
+        'recent_orders': [dict(o) for o in recent_orders]
+    })
+
 @app.route('/api/admin/reports/customers')
 @admin_required
 def admin_report_customers():
