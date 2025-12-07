@@ -1497,25 +1497,6 @@ def process_without_ai(content_lower, session_id=None, conv_data=None):
             if matched_product['stock'] < quantity:
                 return f"Tenho só {matched_product['stock']} unidades de {matched_product['name']} no momento. Quer essa quantidade?"
 
-
-
-@app.route('/api/admin/check-auth')
-def check_admin_auth():
-    """Endpoint público para verificar autenticação do admin"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'authenticated': False, 'message': 'No session'})
-    
-    user = query_db('SELECT id, username, is_admin FROM users WHERE id = ?', [user_id], one=True)
-    if not user:
-        return jsonify({'authenticated': False, 'message': 'User not found'})
-    
-    return jsonify({
-        'authenticated': True,
-        'is_admin': bool(user['is_admin']),
-        'username': user['username']
-    })
-
             # Criar pedido pendente automaticamente
             total = float(matched_product['price']) * quantity
 
@@ -2055,6 +2036,23 @@ def admin_report_abandoned_carts():
     ''')
 
     return jsonify([dict(a) for a in abandoned])
+
+@app.route('/api/admin/check-auth')
+def check_admin_auth():
+    """Endpoint público para verificar autenticação do admin"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'authenticated': False, 'message': 'No session'})
+    
+    user = query_db('SELECT id, username, is_admin FROM users WHERE id = ?', [user_id], one=True)
+    if not user:
+        return jsonify({'authenticated': False, 'message': 'User not found'})
+    
+    return jsonify({
+        'authenticated': True,
+        'is_admin': bool(user['is_admin']),
+        'username': user['username']
+    })
 
 @app.route('/api/admin/new-orders')
 @admin_required
