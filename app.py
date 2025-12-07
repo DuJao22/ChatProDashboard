@@ -1228,6 +1228,10 @@ def process_without_ai(content_lower, session_id=None, conv_data=None):
             if customer:
                 customer_name = customer['name'].split()[0] if customer['name'] else 'amigo'
 
+    # Detectar intenção de fazer pedido - mostrar cards de produtos
+    if any(word in content_lower for word in ['fazer pedido', 'quero fazer um pedido', 'fazer um pedido', 'quero pedir', 'ver produtos', 'produtos disponíveis', 'o que tem', 'cardápio', 'catálogo']):
+        return f"[SHOW_PRODUCTS]Temos esses produtos disponíveis:\n\nClique no botão + para adicionar ao carrinho!"
+
     # Verificar se está escolhendo um produto da lista
     if session_id and session_id in active_conversations:
         awaiting_choice = active_conversations[session_id].get('awaiting_product_choice', False)
@@ -1369,13 +1373,9 @@ def process_without_ai(content_lower, session_id=None, conv_data=None):
     if any(word in content_lower for word in ['horário', 'horario', 'abre', 'fecha', 'funcionamento', 'aberto', 'fechado']):
         return "Nosso horário:\n\nSeg a Sex: 08:30 às 17:30\nSábado: 08:30 às 12:30\nDomingo: Fechado"
 
-    # Catálogo/produtos
+    # Catálogo/produtos - mostrar cards
     if any(word in content_lower for word in ['produto', 'produtos', 'catalogo', 'cardapio', 'cardápio', 'menu', 'o que tem', 'que vende']):
-        products = query_db('SELECT name, price FROM products WHERE active = 1 LIMIT 8')
-        if products:
-            prod_list = "\n".join([f"• {p['name']} - R$ {p['price']:.2f}" for p in products])
-            return f"Nossos produtos:\n\n{prod_list}\n\nQual você quer?"
-        return "Tô sem produtos cadastrados no momento. Entra em contato pelo WhatsApp (31) 99212-2844!"
+        return f"[SHOW_PRODUCTS]Temos esses produtos disponíveis:\n\nClique no botão + para adicionar ao carrinho!"
 
     # Acompanhamento de pedido
     if any(word in content_lower for word in ['acompanhar', 'rastrear', 'status', 'onde está', 'cadê meu', 'meu pedido']):

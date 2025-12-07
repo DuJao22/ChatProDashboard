@@ -45,7 +45,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.sender === 'bot' && data.content.includes('[SHOW_PRODUCTS]')) {
             setTimeout(() => {
                 loadAndShowProducts();
-            }, 500);
+                scrollToBottom();
+            }, 300);
         }
     });
 
