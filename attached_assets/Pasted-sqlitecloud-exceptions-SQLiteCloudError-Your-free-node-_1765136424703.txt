@@ -1,0 +1,114 @@
+sqlitecloud.exceptions.SQLiteCloudError: Your free node has been paused due to inactivity. To resume usage, please restart your node from your dashboard: https://dashboard.sqlitecloud.io
+[2025-12-07 19:39:24,559] ERROR in app: Exception on /api/cart [GET]
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/app.py", line 750, in manage_cart
+    items = query_db('''
+            ^^^^^^^^^^^^
+  File "/home/runner/workspace/app.py", line 113, in query_db
+    cur = get_db().execute(query, args)
+          ^^^^^^^^
+  File "/home/runner/workspace/app.py", line 45, in get_db
+    g.db = sqlitecloud.connect(SQLITECLOUD_URL)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/dbapi2.py", line 180, in connect
+    driver.connect(config.account.hostname, config.account.port, config),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 64, in connect
+    self._internal_config_apply(connection, config)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 469, in _internal_config_apply
+    self._internal_run_command(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 487, in _internal_run_command
+    return self._internal_socket_read(connection, main_socket)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 595, in _internal_socket_read
+    return self._internal_parse_buffer(connection, buffer, len(buffer))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 736, in _internal_parse_buffer
+    raise get_sqlitecloud_error_with_extended_code(
+sqlitecloud.exceptions.SQLiteCloudError: Your free node has been paused due to inactivity. To resume usage, please restart your node from your dashboard: https://dashboard.sqlitecloud.io
+❌ Erro ao conectar: Your free node has been paused due to inactivity. To resume usage, please restart your node from your dashboard: https://dashboard.sqlitecloud.io
+Traceback (most recent call last):
+  File "/home/runner/workspace/app.py", line 1862, in handle_connect
+    conversation = query_db('SELECT * FROM conversations WHERE session_id = ? ORDER BY created_at DESC LIMIT 1',
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/app.py", line 113, in query_db
+    cur = get_db().execute(query, args)
+          ^^^^^^^^
+  File "/home/runner/workspace/app.py", line 45, in get_db
+    g.db = sqlitecloud.connect(SQLITECLOUD_URL)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/dbapi2.py", line 180, in connect
+    driver.connect(config.account.hostname, config.account.port, config),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 64, in connect
+    self._internal_config_apply(connection, config)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 469, in _internal_config_apply
+    self._internal_run_command(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 487, in _internal_run_command
+    return self._internal_socket_read(connection, main_socket)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 595, in _internal_socket_read
+    return self._internal_parse_buffer(connection, buffer, len(buffer))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 736, in _internal_parse_buffer
+    raise get_sqlitecloud_error_with_extended_code(
+sqlitecloud.exceptions.SQLiteCloudError: Your free node has been paused due to inactivity. To resume usage, please restart your node from your dashboard: https://dashboard.sqlitecloud.io
+server=073c645e-425b-4b4c-9c3b-1fea0bbcc934-00-wwlflgq2xvoy.spock.replit.dev//socket.io/ client=172.31.123.226:57130 socket shutdown error: [Errno 9] Bad file descriptor[2025-12-07 19:40:00,576] ERROR in app: Exception on /loja [GET]
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/app.py", line 176, in loja
+    categories = query_db('SELECT * FROM categories WHERE active = 1 ORDER BY name')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/app.py", line 113, in query_db
+    cur = get_db().execute(query, args)
+          ^^^^^^^^
+  File "/home/runner/workspace/app.py", line 45, in get_db
+    g.db = sqlitecloud.connect(SQLITECLOUD_URL)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/dbapi2.py", line 180, in connect
+    driver.connect(config.account.hostname, config.account.port, config),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 64, in connect
+    self._internal_config_apply(connection, config)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 469, in _internal_config_apply
+    self._internal_run_command(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 487, in _internal_run_command
+    return self._internal_socket_read(connection, main_socket)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 595, in _internal_socket_read
+    return self._internal_parse_buffer(connection, buffer, len(buffer))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlitecloud/driver.py", line 736, in _internal_parse_buffer
+    raise get_sqlitecloud_error_with_extended_code(
+sqlitecloud.exceptions.SQLiteCloudError: Your free node has been paused due to inactivity. To resume usage, please restart your node from your dashboard: https://dashboard.sqlitecloud.io
+^A^C[2025-12-07 19:40:06 +0000] [769] [INFO] Handling signal: int
+[2025-12-07 19:40:06 +0000] [780] [INFO] Worker exiting (pid: 780)
