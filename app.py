@@ -78,7 +78,11 @@ def inject_store_settings():
         return {'store': {
             'store_name': 'Ariguá Distribuidora',
             'store_slogan': 'Ponto D\'Água',
-            'whatsapp': '(31) 99212-2844'
+            'whatsapp': '(31) 99212-2844',
+            'address': 'R. Rio Xingu, 753',
+            'neighborhood': 'Riacho',
+            'city': 'Contagem',
+            'state': 'MG'
         }}
 
 def get_db():
@@ -1814,7 +1818,7 @@ def admin_products_api():
             ORDER BY p.name
         ''')
         return jsonify([dict(p) for p in products])
-    
+
     elif request.method == 'POST':
         data = request.get_json()
         product_id = insert_db('''
@@ -1831,7 +1835,7 @@ def admin_products_api():
             brasilia_now()
         ])
         return jsonify({'success': True, 'id': product_id})
-    
+
     elif request.method == 'PUT':
         data = request.get_json()
         update_db('''
@@ -1851,7 +1855,7 @@ def admin_products_api():
             data.get('id')
         ])
         return jsonify({'success': True})
-    
+
     elif request.method == 'DELETE':
         product_id = request.args.get('id')
         update_db('DELETE FROM products WHERE id = ?', [product_id])
@@ -1863,7 +1867,7 @@ def admin_categories_api():
     if request.method == 'GET':
         categories = query_db('SELECT * FROM categories ORDER BY name')
         return jsonify([dict(c) for c in categories])
-    
+
     elif request.method == 'POST':
         data = request.get_json()
         category_id = insert_db('''
@@ -1871,7 +1875,7 @@ def admin_categories_api():
             VALUES (?, ?, ?)
         ''', [data.get('name'), 1, brasilia_now()])
         return jsonify({'success': True, 'id': category_id})
-    
+
     elif request.method == 'DELETE':
         category_id = request.args.get('id')
         update_db('DELETE FROM categories WHERE id = ?', [category_id])
@@ -1885,26 +1889,26 @@ def admin_dashboard_api():
     # Total de pedidos
     total_orders = query_db('SELECT COUNT(*) as count FROM orders', one=True)
     print(f"📊 Total orders: {total_orders['count'] if total_orders else 0}")
-    
+
     # Receita total (excluindo cancelados)
     total_revenue = query_db('SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE status != "cancelled"', one=True)
-    
+
     # Total de clientes
     total_customers = query_db('SELECT COUNT(*) as count FROM customers', one=True)
-    
+
     # Pedidos pendentes
     pending_orders = query_db('SELECT COUNT(*) as count FROM orders WHERE status = "pending"', one=True)
-    
+
     # Carrinhos abandonados (últimas 24h)
     abandoned_carts = query_db('''
         SELECT COUNT(DISTINCT COALESCE(customer_id, session_id)) as count 
         FROM cart_items 
         WHERE updated_at < datetime("now", "-24 hours")
     ''', one=True)
-    
+
     # Produtos ativos
     total_products = query_db('SELECT COUNT(*) as count FROM products WHERE active = 1', one=True)
-    
+
     # Vendas por dia (últimos 30 dias)
     sales_by_day = query_db('''
         SELECT date(created_at) as date, COALESCE(SUM(total), 0) as total, COUNT(*) as count
@@ -1913,14 +1917,14 @@ def admin_dashboard_api():
         GROUP BY date(created_at)
         ORDER BY date
     ''')
-    
+
     # Pedidos por status
     orders_by_status = query_db('''
         SELECT status, COUNT(*) as count
         FROM orders
         GROUP BY status
     ''')
-    
+
     # Top produtos (por receita)
     top_products = query_db('''
         SELECT p.name, SUM(oi.quantity) as total_sold, SUM(oi.quantity * oi.price) as revenue
@@ -1932,7 +1936,7 @@ def admin_dashboard_api():
         ORDER BY revenue DESC
         LIMIT 10
     ''')
-    
+
     # Pedidos recentes
     recent_orders = query_db('''
         SELECT o.*, c.name as customer_name
@@ -1941,7 +1945,7 @@ def admin_dashboard_api():
         ORDER BY o.created_at DESC
         LIMIT 10
     ''')
-    
+
     return jsonify({
         'total_orders': total_orders['count'] if total_orders else 0,
         'total_revenue': float(total_revenue['total']) if total_revenue else 0,
@@ -2002,11 +2006,11 @@ def api_cart():
     try:
         session_id = session.get('session_id')
         customer_id = session.get('customer_id')
-        
+
         if not session_id and not customer_id:
             session['session_id'] = generate_token()
             session_id = session['session_id']
-        
+
         if request.method == 'GET':
             # Listar itens do carrinho
             if customer_id:
@@ -2023,27 +2027,27 @@ def api_cart():
                     JOIN products p ON ci.product_id = p.id
                     WHERE ci.session_id = ?
                 ''', [session_id])
-            
+
             return jsonify([dict(item) for item in items])
-        
+
         elif request.method == 'POST':
             # Adicionar item ao carrinho
             data = request.get_json()
             product_id = data.get('product_id')
             quantity = data.get('quantity', 1)
-            
+
             if not product_id:
                 return jsonify({'success': False, 'error': 'Product ID required'}), 400
-            
+
             # Verificar se produto existe e está ativo
             product = query_db('SELECT * FROM products WHERE id = ? AND active = 1', [product_id], one=True)
             if not product:
                 return jsonify({'success': False, 'error': 'Produto não encontrado'}), 404
-            
+
             # Verificar estoque
             if product['stock'] < quantity:
                 return jsonify({'success': False, 'error': 'Estoque insuficiente'}), 400
-            
+
             # Verificar se já existe no carrinho
             if customer_id:
                 existing = query_db('SELECT * FROM cart_items WHERE customer_id = ? AND product_id = ?', 
@@ -2051,13 +2055,13 @@ def api_cart():
             else:
                 existing = query_db('SELECT * FROM cart_items WHERE session_id = ? AND product_id = ?', 
                                   [session_id, product_id], one=True)
-            
+
             if existing:
                 # Atualizar quantidade
                 new_quantity = existing['quantity'] + quantity
                 if product['stock'] < new_quantity:
                     return jsonify({'success': False, 'error': 'Estoque insuficiente'}), 400
-                
+
                 update_db('UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ?',
                          [new_quantity, brasilia_now(), existing['id']])
             else:
@@ -2072,43 +2076,43 @@ def api_cart():
                         INSERT INTO cart_items (session_id, product_id, quantity, created_at, updated_at)
                         VALUES (?, ?, ?, ?, ?)
                     ''', [session_id, product_id, quantity, brasilia_now(), brasilia_now()])
-            
+
             return jsonify({'success': True})
-        
+
         elif request.method == 'PUT':
             # Atualizar quantidade
             data = request.get_json()
             item_id = data.get('item_id')
             quantity = data.get('quantity', 1)
-            
+
             if quantity < 1:
                 return jsonify({'success': False, 'error': 'Quantidade inválida'}), 400
-            
+
             # Verificar estoque
             item = query_db('SELECT * FROM cart_items WHERE id = ?', [item_id], one=True)
             if not item:
                 return jsonify({'success': False, 'error': 'Item não encontrado'}), 404
-            
+
             product = query_db('SELECT * FROM products WHERE id = ?', [item['product_id']], one=True)
             if product['stock'] < quantity:
                 return jsonify({'success': False, 'error': 'Estoque insuficiente'}), 400
-            
+
             update_db('UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ?',
                      [quantity, brasilia_now(), item_id])
-            
+
             return jsonify({'success': True})
-        
+
         elif request.method == 'DELETE':
             # Remover item
             item_id = request.args.get('item_id')
-            
+
             if customer_id:
                 update_db('DELETE FROM cart_items WHERE id = ? AND customer_id = ?', [item_id, customer_id])
             else:
                 update_db('DELETE FROM cart_items WHERE id = ? AND session_id = ?', [item_id, session_id])
-            
+
             return jsonify({'success': True})
-    
+
     except Exception as e:
         print(f"❌ Erro na API do carrinho: {e}")
         import traceback
@@ -2119,14 +2123,14 @@ def api_cart():
 def api_checkout():
     """Finalizar pedido"""
     customer_id = session.get('customer_id')
-    
+
     if not customer_id:
         return jsonify({'success': False, 'error': 'Cliente não autenticado'}), 401
-    
+
     data = request.get_json()
     payment_method = data.get('payment_method')
     troco = data.get('troco')
-    
+
     # Buscar itens do carrinho
     cart_items = query_db('''
         SELECT ci.*, p.name, p.price, p.stock
@@ -2134,23 +2138,23 @@ def api_checkout():
         JOIN products p ON ci.product_id = p.id
         WHERE ci.customer_id = ?
     ''', [customer_id])
-    
+
     if not cart_items:
         return jsonify({'success': False, 'error': 'Carrinho vazio'}), 400
-    
+
     # Verificar estoque
     for item in cart_items:
         if item['stock'] < item['quantity']:
             return jsonify({'success': False, 'error': f'Estoque insuficiente para {item["name"]}'}), 400
-    
+
     # Calcular totais
     subtotal = sum(item['price'] * item['quantity'] for item in cart_items)
     shipping = 15.00  # Valor fixo, pode ser calculado dinamicamente
     total = subtotal + shipping
-    
+
     # Buscar dados do cliente
     customer = query_db('SELECT * FROM customers WHERE id = ?', [customer_id], one=True)
-    
+
     # Criar pedido
     notes = ''
     if payment_method == 'dinheiro' and troco:
@@ -2158,7 +2162,7 @@ def api_checkout():
             notes = 'Pagamento em dinheiro - Não precisa de troco'
         else:
             notes = f'Pagamento em dinheiro - Troco para R$ {troco}'
-    
+
     order_id = insert_db('''
         INSERT INTO orders (customer_id, subtotal, shipping, discount, total, status, payment_method, shipping_address, notes, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -2175,28 +2179,28 @@ def api_checkout():
         brasilia_now(),
         brasilia_now()
     ])
-    
+
     # Inserir itens do pedido
     for item in cart_items:
         insert_db('''
             INSERT INTO order_items (order_id, product_id, quantity, price, created_at)
             VALUES (?, ?, ?, ?, ?)
         ''', [order_id, item['product_id'], item['quantity'], item['price'], brasilia_now()])
-        
+
         # Atualizar estoque
         update_db('UPDATE products SET stock = stock - ? WHERE id = ?', 
                  [item['quantity'], item['product_id']])
-    
+
     # Limpar carrinho
     update_db('DELETE FROM cart_items WHERE customer_id = ?', [customer_id])
-    
+
     return jsonify({'success': True, 'order_id': order_id})
 
 @app.route('/api/chat/products')
 def chat_products():
     """Retorna produtos para exibição no chat com filtro opcional por categoria"""
     category = request.args.get('category', '')
-    
+
     if category:
         products = query_db('''
             SELECT p.*, c.name as category_name 
@@ -2213,9 +2217,9 @@ def chat_products():
             WHERE p.active = 1
             ORDER BY p.name
         ''')
-    
+
     categories = query_db('SELECT * FROM categories WHERE active = 1 ORDER BY name')
-    
+
     return jsonify({
         'products': [dict(p) for p in products],
         'categories': [dict(c) for c in categories]
@@ -2248,11 +2252,11 @@ def check_admin_auth():
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'authenticated': False, 'message': 'No session'})
-    
+
     user = query_db('SELECT id, username, is_admin FROM users WHERE id = ?', [user_id], one=True)
     if not user:
         return jsonify({'authenticated': False, 'message': 'User not found'})
-    
+
     return jsonify({
         'authenticated': True,
         'is_admin': bool(user['is_admin']),
@@ -2489,11 +2493,11 @@ def handle_connect(auth=None):
         # Obter nome da loja das configurações
         store_settings = get_store_settings_data()
         store_name = store_settings.get('store_name', 'Ariguá Distribuidora')
-        
+
         # Sempre enviar saudação inicial ao conectar
         if customer:
             first_name = customer['name'].split()[0] if customer['name'] else 'amigo'
-            welcome_msg = f"Olá, {first_name}! 😊\n\nBem-vindo de volta à {store_name}!\n\nEm que posso te ajudar hoje?"
+            welcome_msg = f"Olá, {first_name}! Que bom te ver de volta! 😊\n\nBem-vindo à {store_name}!\n\nEm que posso te ajudar hoje?"
         else:
             welcome_msg = f"Olá! 😊\n\nBem-vindo à {store_name}!\n\nPara começar, me informe seu telefone com DDD.\n\nExemplo: 31 99999-9999"
 
@@ -2711,7 +2715,7 @@ def process_chat_message(session_id, content, conv_data):
             active_conversations[session_id]['state'] = 'browsing_products'
             first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
             return f"[SHOW_PRODUCTS]Perfeito, {first_name}! Endereço confirmado!\n\nVeja nossos produtos abaixo:"
-        elif any(word in content_lower for word in ['não', 'nao', 'n', 'no', 'errado', 'outro']):
+        elif any(word in content_lower for word in ['não', 'nao', 'n', 'outro']):
             # Dados incorretos - pedir telefone novamente
             active_conversations[session_id]['state'] = 'awaiting_phone_first'
             active_conversations[session_id]['data'] = {}
@@ -2928,7 +2932,7 @@ def process_chat_message(session_id, content, conv_data):
                     active_conversations[session_id]['state'] = 'awaiting_order_confirmation'
                     return "Ops! Deu um probleminha técnico aqui.\n\nVamos tentar de novo? Responde SIM pra confirmar ou NÃO pra fazer outro pedido."
 
-        elif any(word in content_lower for word in ['não', 'nao', 'cancela', 'desiste', 'n', 'no', 'voltar']):
+        elif any(word in content_lower for word in ['não', 'nao', 'cancela', 'desiste', 'n', 'voltar']):
             # Cliente cancelou o pedido
             active_conversations[session_id]['state'] = 'registered'
             active_conversations[session_id]['data'].pop('pending_order_items', None)
@@ -2971,7 +2975,7 @@ def process_chat_message(session_id, content, conv_data):
             active_conversations[session_id]['state'] = 'browsing_products'
             active_conversations[session_id]['data']['customer_id'] = customer_id
 
-            return "[SHOW_PRODUCTS]Temos esses produtos disponíveis:\n\nClique no botão *+* para adicionar ao carrinho!\n\nQuando terminar, clique em *Finalizar Pedido*"
+            return "[SHOW_PRODUCTS]Temos esses produtos disponíveis:\n\nClique no botão *+* para adicionar ao carrinho!\n\nQuando terminar, clique em 'Finalizar Pedido'"
 
         if any(word in content_lower for word in ['meus pedidos', 'meu pedido', 'pedidos']):
             if customer_id:
@@ -3345,7 +3349,7 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
                 active_conversations[session_id]['data']['cidade'] = cep_data.get('localidade', '')
                 active_conversations[session_id]['data']['estado'] = cep_data.get('uf', '')
 
-                active_conversations[session_id]['state'] = 'awaiting_number'
+                active_conversations[session_id]['state'] = 'awaiting_number_new'
                 return f"✅ Achei o endereço!\n\n📍 *{cep_data.get('logradouro', 'Rua não identificada')}*\n{cep_data.get('bairro', '')} - {cep_data.get('localidade', '')}/{cep_data.get('uf', '')}\n\nQual é o *número* da sua casa/apartamento?"
             else:
                 return "🤔 Não encontrei esse CEP. Confere se está certo e digita de novo?"
@@ -3354,10 +3358,16 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
             return "😅 Tive um probleminha ao buscar o CEP. Pode digitar de novo?"
 
     # Coletando número
-    if state == 'awaiting_number':
-        active_conversations[session_id]['data']['number'] = content.strip()
-        active_conversations[session_id]['state'] = 'awaiting_complement'
-        return "Agora o complemento (apartamento, bloco, casa, etc.)\n\n💡 Se não tiver complemento, basta digitar *NÃO*"
+    if state == 'awaiting_number_new':
+        number = content.strip()
+
+        # Validar que é um número válido
+        if not number or len(number) < 1:
+            return "Por favor, me informa o número da sua casa/apartamento:"
+
+        active_conversations[session_id]['data']['number'] = number
+        active_conversations[session_id]['state'] = 'awaiting_complement_new'
+        return "Última coisa! Tem complemento? (apartamento, bloco, casa, etc.)\n\n💡 Se não tiver, basta digitar *NÃO*"
 
     # Navegando produtos no chat
     if state == 'browsing_products':
@@ -3477,6 +3487,18 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
             active_conversations[session_id]['state'] = 'awaiting_phone_first'
             active_conversations[session_id]['data'] = {}
             return "Ops, deu um erro! Vamos recomeçar.\n\nMe passa seu telefone com DDD:"
+
+    # Coletando número
+    if state == 'awaiting_number':
+        number = content.strip()
+
+        # Validar que é um número válido
+        if not number or len(number) < 1:
+            return "Por favor, me informa o número da sua casa/apartamento:"
+
+        active_conversations[session_id]['data']['number'] = number
+        active_conversations[session_id]['state'] = 'awaiting_complement_new'
+        return "Última coisa! Tem complemento? (apartamento, bloco, casa, etc.)\n\n💡 Se não tiver, basta digitar *NÃO*"
 
     # Processando escolha de continuar no chat ou ir para o site
     if state == 'login_done':
