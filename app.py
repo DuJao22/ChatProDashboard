@@ -1788,7 +1788,7 @@ try:
     GEMINI_AVAILABLE = True
     print("✅ Gemini AI configurado e pronto!")
 except Exception as e:
-    print(f"❌ Erro ao configurar Gemini: {e}")
+    print(f"⚠️ Gemini AI não configurado (modo fallback ativo): {e}")
     GEMINI_AVAILABLE = False
     gemini_chat = None
 
