@@ -12,16 +12,31 @@ class GeminiChat:
         self.model = "gemini-2.0-flash"
         self.chat_history = []
 
-    def chat(self, message: str, context: str = "") -> str:
+    def chat(self, message: str, context: str = "", store_settings: dict = None) -> str:
         try:
+            if store_settings:
+                store_name = store_settings.get('store_name', 'Loja')
+                store_slogan = store_settings.get('store_slogan', '')
+                store_address = f"{store_settings.get('address', '')} - {store_settings.get('neighborhood', '')}, {store_settings.get('city', '')} - {store_settings.get('state', '')}"
+                store_whatsapp = store_settings.get('whatsapp', '')
+                opening_weekday = f"{store_settings.get('opening_time_weekday', '08:30')}-{store_settings.get('closing_time_weekday', '17:30')}"
+                opening_saturday = f"{store_settings.get('opening_time_saturday', '08:30')}-{store_settings.get('closing_time_saturday', '12:30')}"
+            else:
+                store_name = 'Ariguá Distribuidora'
+                store_slogan = 'Ponto D\'Água'
+                store_address = 'R. Rio Xingu, 753 - Riacho, Contagem - MG'
+                store_whatsapp = '(31) 99212-2844'
+                opening_weekday = '08:30-17:30'
+                opening_saturday = '08:30-12:30'
+
             system_instruction = f"""
-Você é a Ana, atendente virtual da Ariguá Distribuidora. Você é simpática, prestativa e conversa de forma natural como uma pessoa de verdade.
+Você é a Ana, atendente virtual da {store_name}. Você é simpática, prestativa e conversa de forma natural como uma pessoa de verdade.
 
 SOBRE A EMPRESA:
-- Ariguá Distribuidora & Ponto D'Água
-- Endereço: R. Rio Xingu, 753 - Riacho, Contagem - MG
-- WhatsApp: (31) 99212-2844
-- Horário: Seg-Sex 08:30-17:30, Sábado 08:30-12:30
+- {store_name} {('& ' + store_slogan) if store_slogan else ''}
+- Endereço: {store_address}
+- WhatsApp: {store_whatsapp}
+- Horário: Seg-Sex {opening_weekday}, Sábado {opening_saturday}
 
 {context}
 

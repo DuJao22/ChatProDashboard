@@ -40,6 +40,47 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 SQLITECLOUD_URL = "sqlitecloud://cmq6frwshz.g4.sqlite.cloud:8860/database.db?apikey=Dor8OwUECYmrbcS5vWfsdGpjCpdm9ecSDJtywgvRw8k"
 
+@app.context_processor
+def inject_store_settings():
+    """Injeta configurações da loja em todos os templates"""
+    try:
+        conn = sqlitecloud.connect(SQLITECLOUD_URL)
+        conn.row_factory = sqlitecloud.Row
+        settings = conn.execute('SELECT * FROM store_settings WHERE id = 1').fetchone()
+        conn.close()
+        if settings:
+            return {'store': dict(settings)}
+        else:
+            return {'store': {
+                'store_name': 'Ariguá Distribuidora',
+                'store_slogan': 'Ponto D\'Água',
+                'whatsapp': '(31) 99212-2844',
+                'phone1': '(31) 3044-5050',
+                'phone2': '',
+                'phone3': '',
+                'phone4': '',
+                'email': 'contato@arigua.com.br',
+                'address': 'R. Rio Xingu, 753',
+                'number': '753',
+                'neighborhood': 'Riacho',
+                'city': 'Contagem',
+                'state': 'MG',
+                'cep': '32265-290',
+                'opening_time_weekday': '08:30',
+                'closing_time_weekday': '17:30',
+                'opening_time_saturday': '08:30',
+                'closing_time_saturday': '12:30',
+                'open_sunday': 0,
+                'logo_url': '/static/images/logo-arigua.png'
+            }}
+    except Exception as e:
+        print(f"Erro ao injetar configurações: {e}")
+        return {'store': {
+            'store_name': 'Ariguá Distribuidora',
+            'store_slogan': 'Ponto D\'Água',
+            'whatsapp': '(31) 99212-2844'
+        }}
+
 def get_db():
     if 'db' not in g:
         g.db = sqlitecloud.connect(SQLITECLOUD_URL)
@@ -181,6 +222,59 @@ def update_db(query, args=()):
     cur = db.execute(query, args)
     db.commit()
     return cur.rowcount
+
+def get_store_settings_data():
+    """Obtém as configurações da loja do banco de dados para uso em templates e contexto da IA"""
+    try:
+        settings = query_db('SELECT * FROM store_settings WHERE id = 1', one=True)
+        if settings:
+            return dict(settings)
+        else:
+            return {
+                'id': 1,
+                'store_name': 'Ariguá Distribuidora',
+                'store_slogan': 'Ponto D\'Água',
+                'logo_url': '/static/images/logo-arigua.png',
+                'about_text': '',
+                'phone1': '(31) 3044-5050',
+                'phone2': '',
+                'phone3': '',
+                'phone4': '',
+                'whatsapp': '(31) 99212-2844',
+                'email': 'contato@arigua.com.br',
+                'cep': '32265-290',
+                'address': 'R. Rio Xingu, 753',
+                'number': '753',
+                'neighborhood': 'Riacho',
+                'city': 'Contagem',
+                'state': 'MG',
+                'latitude': None,
+                'longitude': None,
+                'delivery_radius_km': 10.0,
+                'delivery_fee': 5.00,
+                'free_delivery_min_value': 100.00,
+                'min_order_value': 0,
+                'opening_time_weekday': '08:30',
+                'closing_time_weekday': '17:30',
+                'opening_time_saturday': '08:30',
+                'closing_time_saturday': '12:30',
+                'open_sunday': 0,
+                'opening_time_sunday': '',
+                'closing_time_sunday': '',
+                'instagram_url': '',
+                'facebook_url': ''
+            }
+    except Exception as e:
+        print(f"Erro ao obter configurações da loja: {e}")
+        return {
+            'store_name': 'Ariguá Distribuidora',
+            'store_slogan': 'Ponto D\'Água',
+            'whatsapp': '(31) 99212-2844',
+            'address': 'R. Rio Xingu, 753',
+            'neighborhood': 'Riacho',
+            'city': 'Contagem',
+            'state': 'MG'
+        }
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -808,20 +902,42 @@ def get_store_settings():
                 'data': dict(settings)
             })
         else:
-            # Retornar configurações padrão
+            # Retornar configurações padrão com nomes corretos
             return jsonify({
                 'success': True,
                 'data': {
                     'id': 1,
                     'store_name': 'Ariguá Distribuidora',
-                    'store_logo': '/static/images/logo-arigua.png',
-                    'store_phone': '(31) 99212-2844',
-                    'store_email': 'contato@arigua.com.br',
-                    'store_address': 'R. Rio Xingu, 753 - Riacho, Contagem - MG',
-                    'store_cep': '32265-290',
+                    'store_slogan': 'Ponto D\'Água',
+                    'logo_url': '/static/images/logo-arigua.png',
+                    'about_text': '',
+                    'phone1': '(31) 3044-5050',
+                    'phone2': '',
+                    'phone3': '',
+                    'phone4': '',
+                    'whatsapp': '(31) 99212-2844',
+                    'email': 'contato@arigua.com.br',
+                    'cep': '32265-290',
+                    'address': 'R. Rio Xingu, 753',
+                    'number': '753',
+                    'neighborhood': 'Riacho',
+                    'city': 'Contagem',
+                    'state': 'MG',
+                    'latitude': None,
+                    'longitude': None,
                     'delivery_radius_km': 10.0,
                     'delivery_fee': 5.00,
-                    'min_order_value': 20.00
+                    'free_delivery_min_value': 100.00,
+                    'min_order_value': 0,
+                    'opening_time_weekday': '08:30',
+                    'closing_time_weekday': '17:30',
+                    'opening_time_saturday': '08:30',
+                    'closing_time_saturday': '12:30',
+                    'open_sunday': 0,
+                    'opening_time_sunday': '',
+                    'closing_time_sunday': '',
+                    'instagram_url': '',
+                    'facebook_url': ''
                 }
             })
     except Exception as e:
@@ -840,45 +956,121 @@ def save_store_settings():
         existing = conn.execute('SELECT id FROM store_settings WHERE id = 1').fetchone()
 
         if existing:
-            # Atualizar
+            # Atualizar todos os campos
             conn.execute('''
                 UPDATE store_settings SET
                     store_name = ?,
+                    store_slogan = ?,
+                    logo_url = ?,
+                    about_text = ?,
+                    phone1 = ?,
+                    phone2 = ?,
+                    phone3 = ?,
+                    phone4 = ?,
                     whatsapp = ?,
                     email = ?,
-                    address = ?,
                     cep = ?,
+                    address = ?,
+                    number = ?,
+                    neighborhood = ?,
+                    city = ?,
+                    state = ?,
+                    latitude = ?,
+                    longitude = ?,
                     delivery_radius_km = ?,
                     delivery_fee = ?,
-                    min_order_value = ?
+                    free_delivery_min_value = ?,
+                    min_order_value = ?,
+                    opening_time_weekday = ?,
+                    closing_time_weekday = ?,
+                    opening_time_saturday = ?,
+                    closing_time_saturday = ?,
+                    open_sunday = ?,
+                    opening_time_sunday = ?,
+                    closing_time_sunday = ?,
+                    instagram_url = ?,
+                    facebook_url = ?,
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE id = 1
             ''', (
                 data.get('store_name'),
-                data.get('store_phone'),
-                data.get('store_email'),
-                data.get('store_address'),
-                data.get('store_cep'),
+                data.get('store_slogan'),
+                data.get('logo_url'),
+                data.get('about_text'),
+                data.get('phone1'),
+                data.get('phone2'),
+                data.get('phone3'),
+                data.get('phone4'),
+                data.get('whatsapp'),
+                data.get('email'),
+                data.get('cep'),
+                data.get('address'),
+                data.get('number'),
+                data.get('neighborhood'),
+                data.get('city'),
+                data.get('state'),
+                data.get('latitude'),
+                data.get('longitude'),
                 data.get('delivery_radius_km'),
                 data.get('delivery_fee'),
-                data.get('min_order_value')
+                data.get('free_delivery_min_value'),
+                data.get('min_order_value'),
+                data.get('opening_time_weekday'),
+                data.get('closing_time_weekday'),
+                data.get('opening_time_saturday'),
+                data.get('closing_time_saturday'),
+                data.get('open_sunday', 0),
+                data.get('opening_time_sunday'),
+                data.get('closing_time_sunday'),
+                data.get('instagram_url'),
+                data.get('facebook_url')
             ))
         else:
-            # Inserir
+            # Inserir todos os campos
             conn.execute('''
                 INSERT INTO store_settings (
-                    id, store_name, whatsapp, email, 
-                    address, cep, delivery_radius_km,
-                    delivery_fee, min_order_value
-                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
+                    id, store_name, store_slogan, logo_url, about_text,
+                    phone1, phone2, phone3, phone4, whatsapp, email,
+                    cep, address, number, neighborhood, city, state,
+                    latitude, longitude, delivery_radius_km, delivery_fee,
+                    free_delivery_min_value, min_order_value,
+                    opening_time_weekday, closing_time_weekday,
+                    opening_time_saturday, closing_time_saturday,
+                    open_sunday, opening_time_sunday, closing_time_sunday,
+                    instagram_url, facebook_url
+                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 data.get('store_name'),
-                data.get('store_phone'),
-                data.get('store_email'),
-                data.get('store_address'),
-                data.get('store_cep'),
+                data.get('store_slogan'),
+                data.get('logo_url'),
+                data.get('about_text'),
+                data.get('phone1'),
+                data.get('phone2'),
+                data.get('phone3'),
+                data.get('phone4'),
+                data.get('whatsapp'),
+                data.get('email'),
+                data.get('cep'),
+                data.get('address'),
+                data.get('number'),
+                data.get('neighborhood'),
+                data.get('city'),
+                data.get('state'),
+                data.get('latitude'),
+                data.get('longitude'),
                 data.get('delivery_radius_km'),
                 data.get('delivery_fee'),
-                data.get('min_order_value')
+                data.get('free_delivery_min_value'),
+                data.get('min_order_value'),
+                data.get('opening_time_weekday'),
+                data.get('closing_time_weekday'),
+                data.get('opening_time_saturday'),
+                data.get('closing_time_saturday'),
+                data.get('open_sunday', 0),
+                data.get('opening_time_sunday'),
+                data.get('closing_time_sunday'),
+                data.get('instagram_url'),
+                data.get('facebook_url')
             ))
 
         conn.commit()
@@ -1093,9 +1285,18 @@ def process_with_ai(session_id, content, conv_data):
                 'stock': p['stock']
             })
 
+        # Obter configurações da loja
+        store_settings = get_store_settings_data()
+        store_name = store_settings.get('store_name', 'Loja')
+        store_slogan = store_settings.get('store_slogan', '')
+        store_address = f"{store_settings.get('address', '')} - {store_settings.get('neighborhood', '')}, {store_settings.get('city', '')} - {store_settings.get('state', '')}"
+        store_whatsapp = store_settings.get('whatsapp', '')
+        opening_weekday = f"{store_settings.get('opening_time_weekday', '08:30')}-{store_settings.get('closing_time_weekday', '17:30')}"
+        opening_saturday = f"{store_settings.get('opening_time_saturday', '08:30')}-{store_settings.get('closing_time_saturday', '12:30')}"
+
         # Criar contexto rico para o Gemini
         context = f"""
-Você é o assistente virtual da Ariguá Distribuidora, especializado em atendimento e vendas.
+Você é o assistente virtual da {store_name}, especializado em atendimento e vendas.
 
 INFORMAÇÕES DO CLIENTE:
 - Nome: {customer['name'] if customer else 'Não identificado'}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Carrinho - Ariguá Distribuidora{% endblock %}
+{% block title %}Carrinho - {{ store.store_name|default('Ariguá Distribuidora') }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/carrinho.css') }}">
@@ -56,7 +56,7 @@
         </a>
     </footer>
 
-    <a href="https://wa.me/5531992122844" class="floating-whatsapp" target="_blank">
+    <a href="https://wa.me/55{{ store.whatsapp|default('(31) 99212-2844')|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') }}" class="floating-whatsapp" target="_blank">
         <i class="fab fa-whatsapp"></i>
     </a>
 </div>

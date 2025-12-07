@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0D3B66">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>{% block title %}Ariguá Distribuidora{% endblock %}</title>
+    <title>{% block title %}{{ store.store_name|default('Ariguá Distribuidora') }}{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo-arigua.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">

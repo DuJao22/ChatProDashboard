@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Produtos - Ariguá Distribuidora{% endblock %}
+{% block title %}Produtos - {{ store.store_name|default('Ariguá Distribuidora') }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/loja.css') }}">
@@ -13,8 +13,8 @@
                 <i class="fas fa-arrow-left"></i>
             </a>
             <div class="logo">
-                <img src="{{ url_for('static', filename='images/logo-arigua.png') }}" alt="Ariguá" class="logo-img">
-                <span>Ariguá</span>
+                <img src="{{ store.logo_url|default(url_for('static', filename='images/logo-arigua.png')) }}" alt="{{ store.store_name|default('Ariguá') }}" class="logo-img">
+                <span>{{ store.store_name|default('Ariguá')|truncate(15, True, '') }}</span>
             </div>
             <div class="header-actions">
                 <button class="search-toggle" id="searchToggle">
@@ -103,7 +103,7 @@
     </div>
 
     <div class="floating-buttons">
-        <a href="https://wa.me/5531992122844" class="fab fab-whatsapp" target="_blank">
+        <a href="https://wa.me/55{{ store.whatsapp|default('(31) 99212-2844')|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') }}" class="fab fab-whatsapp" target="_blank">
             <i class="fab fa-whatsapp"></i>
         </a>
         <button class="fab fab-chat" onclick="window.location.href='{{ url_for('chat') }}'">
