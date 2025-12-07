@@ -1,3 +1,4 @@
+replit_final_file>
 # IMPORTANTE: eventlet.monkey_patch() DEVE ser a primeira coisa executada
 import eventlet
 eventlet.monkey_patch()
@@ -2211,10 +2212,10 @@ def process_chat_message(session_id, content, conv_data):
         active_conversations[session_id]['state'] = 'awaiting_complement_new'
         return "Complemento? (apt, bloco, etc)\n\nSe não tiver, digite NÃO"
 
-    # Coletando complemento e finalizando novo cadastro
+    # Finalizando novo cadastro
     if state == 'awaiting_complement_new':
         complement = ''
-        if not any(word in content_lower for word in ['não', 'nao', 'sem', 'nenhum']):
+        if not any(word in content_lower for word in ['não', 'nao', 'sem']):
             complement = content.strip()
 
         active_conversations[session_id]['data']['complement'] = complement
@@ -2243,10 +2244,10 @@ def process_chat_message(session_id, content, conv_data):
             update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
                      [customer_id, conv_id])
 
-            # LOGIN FEITO (cadastro novo completo) - ir direto para produtos
+            # Cadastro completo - mostrar produtos
             active_conversations[session_id]['state'] = 'browsing_products'
             first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
-            return f"[SHOW_PRODUCTS]Pronto, {first_name}! Cadastro feito! 🎉\n\nVeja nossos produtos abaixo. Clique no botão *+* para adicionar ao carrinho!"
+            return f"[SHOW_PRODUCTS]Pronto, {first_name}! Cadastro feito! 🎉\n\nVeja nossos produtos abaixo."
 
         except Exception as e:
             error_msg = str(e).lower()
@@ -2808,10 +2809,10 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
             update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
                      [customer_id, conv_id])
 
-            # LOGIN FEITO (cadastro novo completo) - ir direto para produtos
+            # Cadastro completo - ir direto para produtos
             active_conversations[session_id]['state'] = 'browsing_products'
             first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
-            return f"[SHOW_PRODUCTS]Pronto, {first_name}! Cadastro feito! 🎉\n\nVeja nossos produtos abaixo. Clique no botão *+* para adicionar ao carrinho!"
+            return f"[SHOW_PRODUCTS]Pronto, {first_name}! Cadastro feito! 🎉\n\nVeja nossos produtos abaixo."
 
         except Exception as e:
             error_msg = str(e)
@@ -2916,7 +2917,7 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
             total = sum(item['price'] * item['quantity'] for item in cart_items)
             items_text = "\n".join([f"• {item['quantity']}x {item['name']} - R$ {(item['price'] * item['quantity']):.2f}" for item in cart_items])
 
-            return f"[SHOW_PRODUCTS]🛒 *No carrinho:*\n\n{items_text}\n\nTotal: R$ {total:.2f}\n\nDigite *finalizar* quando quiser fechar o pedido!"
+            return "[SHOW_PRODUCTS]🛒 *No carrinho:*\n\n{items_text}\n\nTotal: R$ {total:.2f}\n\nDigite *finalizar* quando quiser fechar o pedido!"
 
         if any(word in content_lower for word in ['voltar', 'sair']):
             active_conversations[session_id]['state'] = 'registered'
@@ -2957,10 +2958,10 @@ Precisa de algo mais? Estou aqui para ajudar! 😊"""
             update_db('UPDATE conversations SET customer_id = ? WHERE id = ?', 
                      [customer_id, conv_id])
 
-            # LOGIN FEITO (cadastro novo completo) - ir direto para produtos
+            # Cadastro completo - ir direto para produtos
             active_conversations[session_id]['state'] = 'browsing_products'
             first_name = user_data.get('name', '').split()[0] if user_data.get('name') else 'amigo'
-            return f"[SHOW_PRODUCTS]Pronto, {first_name}! Cadastro feito! 🎉\n\nVeja nossos produtos abaixo. Clique no botão *+* para adicionar ao carrinho!"
+            return f"[SHOW_PRODUCTS]Pronto, {first_name}! Cadastro feito! 🎉\n\nVeja nossos produtos abaixo."
 
         except Exception as e:
             error_msg = str(e)
@@ -3005,3 +3006,4 @@ if __name__ == '__main__':
     start_ping_thread()
     print("🚀 Servidor iniciando com SQLite Cloud...")
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+</replit_final_file>
