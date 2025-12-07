@@ -1431,6 +1431,10 @@ def process_without_ai(content_lower, session_id=None, conv_data=None):
     """Fallback inteligente quando Gemini não está disponível - processa pedidos naturalmente"""
     import re
 
+    # Obter nome da loja
+    store_settings = get_store_settings_data()
+    store_name = store_settings.get('store_name', 'Ariguá Distribuidora')
+
     # Pegar dados do cliente se disponíveis
     customer_id = None
     customer_name = 'amigo'
@@ -2482,12 +2486,16 @@ def handle_connect(auth=None):
                 'data': {}
             }
 
+        # Obter nome da loja das configurações
+        store_settings = get_store_settings_data()
+        store_name = store_settings.get('store_name', 'Ariguá Distribuidora')
+        
         # Sempre enviar saudação inicial ao conectar
         if customer:
             first_name = customer['name'].split()[0] if customer['name'] else 'amigo'
-            welcome_msg = f"Olá, {first_name}! 😊\n\nBem-vindo de volta à Ariguá Distribuidora!\n\nEm que posso te ajudar hoje?"
+            welcome_msg = f"Olá, {first_name}! 😊\n\nBem-vindo de volta à {store_name}!\n\nEm que posso te ajudar hoje?"
         else:
-            welcome_msg = "Olá! 😊\n\nBem-vindo à Ariguá Distribuidora!\n\nPara começar, me informe seu telefone com DDD.\n\nExemplo: 31 99999-9999"
+            welcome_msg = f"Olá! 😊\n\nBem-vindo à {store_name}!\n\nPara começar, me informe seu telefone com DDD.\n\nExemplo: 31 99999-9999"
 
         msg_id = insert_db('INSERT INTO messages (conversation_id, sender, content, created_at) VALUES (?, ?, ?, ?)',
                           [conv_id, 'bot', welcome_msg, brasilia_now()])
@@ -2692,7 +2700,9 @@ def process_chat_message(session_id, content, conv_data):
             # Cliente novo - ir direto para cadastro
             active_conversations[session_id]['data']['phone'] = phone
             active_conversations[session_id]['state'] = 'awaiting_name_new'
-            return "Não encontrei esse telefone cadastrado.\n\nVamos fazer um cadastro rápido! 📝\n\nQual é o seu nome completo?"
+            store_settings = get_store_settings_data()
+            store_name = store_settings.get('store_name', 'Ariguá Distribuidora')
+            return f"Não encontrei esse telefone cadastrado.\n\nVamos fazer um cadastro rápido na {store_name}! 📝\n\nQual é o seu nome completo?"
 
     # Confirmando registro de cliente existente
     if state == 'confirming_registration':
