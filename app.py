@@ -743,6 +743,12 @@ def admin_login():
 
     return render_template('admin_login.html')
 
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('user_id', None)
+    session.pop('username', None)
+    return redirect(url_for('admin_login'))
+
 # === ROTA: Admin - Dashboard ===
 @app.route('/admin')
 @admin_required
