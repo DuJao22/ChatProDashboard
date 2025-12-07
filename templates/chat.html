@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#075e54">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Chat - {{ store.store_name|default('Ariguá Distribuidora') }}</title>
+    <title>Chat - {{ store.store_name|default('Ariguá Distribuidora', true) }}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo-arigua.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,7 +25,7 @@
                     <i class="fas fa-tint"></i>
                 </div>
                 <div class="header-info">
-                    <h1>{{ store.store_name|default('Ariguá') }} Atendimento</h1>
+                    <h1>{{ store.store_name|default('Ariguá', true) }} Atendimento</h1>
                     <span class="status">
                         <span class="status-dot"></span>
                         Online

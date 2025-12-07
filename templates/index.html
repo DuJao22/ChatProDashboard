@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ store.store_name|default('Ariguá Distribuidora') }}{% if store.store_slogan %} & {{ store.store_slogan }}{% endif %} - Seu ponto de água mineral{% endblock %}
+{% block title %}{{ store.store_name|default('Ariguá Distribuidora', true) }}{% if store.store_slogan and store.store_slogan != '' %} & {{ store.store_slogan }}{% endif %} - Seu ponto de água mineral{% endblock %}
 
 {% block content %}
 <div class="landing-page">
@@ -37,18 +37,18 @@
             <div class="contact-info">
                 <div class="contact-card">
                     <h3><i class="fas fa-map-marker-alt"></i> Endereço</h3>
-                    <p>{{ store.address|default('R. Rio Xingu, 753') }} - {{ store.neighborhood|default('Riacho') }}<br>{{ store.city|default('Contagem') }} - {{ store.state|default('MG') }}, {{ store.cep|default('32265-290') }}</p>
+                    <p>{{ store.address|default('R. Rio Xingu, 753', true) }}{% if store.number and store.number != '' %}, {{ store.number }}{% endif %} - {{ store.neighborhood|default('Riacho', true) }}<br>{{ store.city|default('Contagem', true) }} - {{ store.state|default('MG', true) }}{% if store.cep and store.cep != '' %}, {{ store.cep }}{% endif %}</p>
                 </div>
                 <div class="contact-card">
                     <h3><i class="fas fa-phone-alt"></i> Telefones</h3>
-                    <p>{{ store.phone1|default('(31) 3044-5050') }}{% if store.phone2 %} | {{ store.phone2 }}{% endif %}{% if store.phone3 %}<br>{{ store.phone3 }}{% endif %}{% if store.phone4 %} | {{ store.phone4 }}{% endif %}</p>
-                    <a href="https://wa.me/55{{ store.whatsapp|default('(31) 99212-2844')|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') }}" class="whatsapp-link">
-                        <i class="fab fa-whatsapp"></i> {{ store.whatsapp|default('(31) 99212-2844') }}
+                    <p>{{ store.phone1|default('(31) 3044-5050', true) }}{% if store.phone2 and store.phone2 != '' %} | {{ store.phone2 }}{% endif %}{% if store.phone3 and store.phone3 != '' %}<br>{{ store.phone3 }}{% endif %}{% if store.phone4 and store.phone4 != '' %} | {{ store.phone4 }}{% endif %}</p>
+                    <a href="https://wa.me/55{{ store.whatsapp|default('(31) 99212-2844', true)|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') }}" class="whatsapp-link">
+                        <i class="fab fa-whatsapp"></i> {{ store.whatsapp|default('(31) 99212-2844', true) }}
                     </a>
                 </div>
                 <div class="contact-card">
                     <h3><i class="fas fa-clock"></i> Horário</h3>
-                    <p>Seg a Sex: {{ store.opening_time_weekday|default('08:30') }} - {{ store.closing_time_weekday|default('17:30') }}<br>Sábado: {{ store.opening_time_saturday|default('08:30') }} - {{ store.closing_time_saturday|default('12:30') }}<br>Domingo: {% if store.open_sunday %}{{ store.opening_time_sunday }} - {{ store.closing_time_sunday }}{% else %}Fechado{% endif %}</p>
+                    <p>Seg a Sex: {{ store.opening_time_weekday|default('08:30', true) }} - {{ store.closing_time_weekday|default('17:30', true) }}<br>Sábado: {{ store.opening_time_saturday|default('08:30', true) }} - {{ store.closing_time_saturday|default('12:30', true) }}<br>Domingo: {% if store.open_sunday %}{{ store.opening_time_sunday|default('08:00', true) }} - {{ store.closing_time_sunday|default('12:00', true) }}{% else %}Fechado{% endif %}</p>
                 </div>
             </div>
 
@@ -69,7 +69,7 @@
         </div>
     </div>
 
-    <a href="https://wa.me/55{{ store.whatsapp|default('(31) 99212-2844')|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') }}" class="floating-whatsapp-button" target="_blank">
+    <a href="https://wa.me/55{{ store.whatsapp|default('(31) 99212-2844', true)|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') }}" class="floating-whatsapp-button" target="_blank">
         <i class="fab fa-whatsapp"></i>
     </a>
 </div>
